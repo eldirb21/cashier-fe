@@ -1,3 +1,6 @@
+import secureLocalStorage from "react-secure-storage";
+
+
 // GET
 export const getCookie = (name: string) => {
   if (typeof document === "undefined") return null;
@@ -24,4 +27,16 @@ export const removeCookie = (name: string) => {
   if (typeof document === "undefined") return;
 
   document.cookie = `${name}=; Max-Age=0; path=/`;
+};
+
+export const getLocalStore = (type: string) => {
+  return secureLocalStorage.getItem(type);
+};
+
+export const setLocalStore = (type: string, value: string) => {
+  secureLocalStorage.setItem(type, value);
+};
+
+export const removeLocalStore = (type: string) => {
+  secureLocalStorage.removeItem(type);
 };

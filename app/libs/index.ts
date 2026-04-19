@@ -6,3 +6,5 @@ export * from "./func";
 export * from "./commond";
 export * from "./types";
 export * from "./currency";
+export * from "./axios";
+export * from "./data";

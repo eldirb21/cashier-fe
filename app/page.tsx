@@ -1,16 +1,5 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { Spinner } from "./components/atoms";
 
-export default async function Home() {
-  const cookieStore = cookies();
-  const token = (await cookieStore).get("token") ?? false;
-
-  switch (!!token) {
-    case true:
-      redirect("/dashboard");
-      break;
-    case false:
-      redirect("/auth/login");
-      break;
-  }
+export default function Home() {
+  return <Spinner />;
 }

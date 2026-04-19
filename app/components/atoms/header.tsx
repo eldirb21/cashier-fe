@@ -241,6 +241,9 @@ export const Headers = () => {
 
   const handleLogout = () => {
     setProfileDropOpen(false);
+
+    // doLogout()
+
     // your logout logic
     console.log("Logout");
   };

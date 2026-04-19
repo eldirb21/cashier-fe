@@ -57,7 +57,6 @@ export default function Signup({}: Props) {
 
     setError({});
 
-    setCookie("token", identifier);
     router.replace("/auth/login");
   };
 

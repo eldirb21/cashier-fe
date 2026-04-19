@@ -3,6 +3,39 @@ export type OrderStatus = "open" | "paid" | "voided";
 export type DiscountType = "percentage" | "fixed";
 export type MovementType = "purchase" | "sale" | "adjustment" | "void";
 
+
+export interface User {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  phone: string;
+}
+
+export interface AuthState {
+  user: User | null;
+  token: string | null;
+  isLoading: boolean;
+  error: string | null;
+}
+
+export interface LoginCredentials {
+  identifier: string;
+  password: string;
+}
+export interface AuthResponse {
+  data: {
+    accessToken: string;
+    refreshToken: string;
+    user: User;
+  };
+  message: string;
+  success: boolean;
+}
+export interface ApiErrorResponse {
+  message: string;
+}
+
 export interface Category {
   id: string;
   name: string;
@@ -25,8 +58,8 @@ export interface Product {
   price: number;
   cost_price: number;
   stock: number;
-  min_stock: number;5
-  
+  min_stock: number;
+
   img_url: string;
   is_active: boolean;
 }

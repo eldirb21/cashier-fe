@@ -1,7 +1,10 @@
 "use client";
 
-import { Footer, LoginRedirectGuard } from "@/app/components/atoms";
+import { Footer, LoginRedirectGuard, Spinner } from "@/app/components/atoms";
+import { useConfirm } from "@/app/components/molecules";
 import { isValidIdentifier, isValidPassword, setCookie } from "@/app/libs";
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import { loginUser } from "@/app/store/slices/authSlices";
 import { redirect, useRouter } from "next/navigation";
 import { useState } from "react";
 type FormError = {
@@ -11,13 +14,18 @@ type FormError = {
 type Props = {};
 
 export default function Login({}: Props) {
+  const dispatch = useAppDispatch();
+    const { user, isLoading, error } = useAppSelector((state) => state.auth);
+
+  const { showAlert } = useConfirm();
+
   const router = useRouter();
 
   const [form, setForm] = useState({
-    identifier: "",
-    password: "",
+    identifier: "eldirb@gmail.com",
+    password: "password123",
   });
-  const [error, setError] = useState<FormError>({});
+  const [errors, setErrors] = useState<FormError>({});
 
   const [showPassword, setShowPassword] = useState(false);
 
@@ -36,28 +44,34 @@ export default function Login({}: Props) {
     let newError: FormError = {};
 
     if (!isValidIdentifier(identifier)) {
-      setError({
-        ...error,
+      setErrors({
+        ...errors,
         identifier: "Masukkan email atau nomor HP yang valid",
       });
       return;
     }
 
     if (!isValidPassword(password)) {
-      setError({ ...error, password: "Password minimal 6 karakter" });
+      setErrors({ ...errors, password: "Password minimal 6 karakter" });
       return;
     }
 
     if (Object.keys(newError).length > 0) {
-      setError(newError);
+      setErrors(newError);
       return;
     }
 
-    setError({});
+    setErrors({});
 
-    setCookie("token", identifier);
-    router.replace("/dashboard");
+    try {
+      await dispatch(loginUser({ identifier, password })).unwrap();
+      router.replace("/dashboard")
+    } catch (err) {
+      showAlert(`${err}`, "info");
+    }
+
   };
+if (isLoading) return <Spinner />;
 
   return (
     <LoginRedirectGuard>
@@ -81,15 +95,15 @@ export default function Login({}: Props) {
                 value={form.identifier}
                 onChange={handleChange}
                 className={`w-full mt-1 px-4 py-2 border rounded-lg text-black bg-white focus:outline-none focus:ring-2 ${
-                  error.identifier
+                  errors.identifier
                     ? "border-red-500 focus:ring-red-500"
                     : "focus:ring-blue-500"
                 }`}
                 required
               />
-              {error["identifier"] && (
+              {errors["identifier"] && (
                 <p className="text-red-500 text-sm">
-                  {error["identifier"] ?? ""}
+                  {errors["identifier"] ?? ""}
                 </p>
               )}
             </div>
@@ -105,15 +119,15 @@ export default function Login({}: Props) {
                   value={form.password}
                   onChange={handleChange}
                   className={`w-full mt-1 px-4 py-2 border rounded-lg text-black bg-white focus:outline-none focus:ring-2 ${
-                    error.password
+                    errors.password
                       ? "border-red-500 focus:ring-red-500"
                       : "focus:ring-blue-500"
                   }`}
                   required
                 />
-                {error["password"] && (
+                {errors["password"] && (
                   <p className="text-red-500 text-sm">
-                    {error["password"] ?? ""}
+                    {errors["password"] ?? ""}
                   </p>
                 )}
 
@@ -137,7 +151,7 @@ export default function Login({}: Props) {
             <button
               type="button"
               className="w-full bg-transparent text-black rounded-lg font-normal hover:text-blue-700 transition"
-              onClick={() => redirect("/auth/forgot-password")}
+              onClick={() => router.push("/auth/forgot-password")}
             >
               Forgot Password?
             </button>
@@ -147,7 +161,7 @@ export default function Login({}: Props) {
               <button
                 type="button"
                 className="px-2 bg-transparent text-blue-700 py-0 rounded-lg font-semibold hover:text-blue-700 transition"
-                onClick={() => redirect("/auth/signup")}
+                onClick={() => router.push("/auth/signup")}
               >
                 Signup
               </button>

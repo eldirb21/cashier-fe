@@ -19,7 +19,7 @@ export function LoginRedirectGuard({
       router.replace("/dashboard");
     } else {
       // Hapus history lama dengan mengganti state
-      window.history.replaceState({}, "", "/auth/login");
+      // window.history.replaceState({}, "", "/auth/login");
     }
   }, [router]);
 
