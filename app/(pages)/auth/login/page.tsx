@@ -1,77 +1,100 @@
-"use client";
+'use client'
 
-import { Footer, LoginRedirectGuard, Spinner } from "@/app/components/atoms";
-import { useConfirm } from "@/app/components/molecules";
-import { isValidIdentifier, isValidPassword, setCookie } from "@/app/libs";
-import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import { loginUser } from "@/app/store/slices/authSlices";
-import { redirect, useRouter } from "next/navigation";
-import { useState } from "react";
+import { Footer, LoginRedirectGuard, Spinner } from '@/app/components/atoms'
+import { useConfirm } from '@/app/components/molecules'
+import { isValidIdentifier, isValidPassword, setCookie } from '@/app/libs'
+import { useAppDispatch, useAppSelector } from '@/app/store/hooks'
+import { loginUser } from '@/app/store/slices/authSlices'
+import { redirect, useRouter } from 'next/navigation'
+import { useState } from 'react'
 type FormError = {
-  identifier?: string;
-  password?: string;
-};
-type Props = {};
+  identifier?: string
+  password?: string
+}
+type Props = {}
 
 export default function Login({}: Props) {
-  const dispatch = useAppDispatch();
-    const { user, isLoading, error } = useAppSelector((state) => state.auth);
+  const dispatch = useAppDispatch()
+  const { user, isLoading, error } = useAppSelector((state) => state.auth)
 
-  const { showAlert } = useConfirm();
+  const { showAlert } = useConfirm()
 
-  const router = useRouter();
+  const router = useRouter()
 
   const [form, setForm] = useState({
-    identifier: "eldirb@gmail.com",
-    password: "password123",
-  });
-  const [errors, setErrors] = useState<FormError>({});
+    identifier: 'eldirb95@gmail.com',
+    password: 'password123',
+  })
+  const [errors, setErrors] = useState<FormError>({})
 
-  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({
       ...form,
       [e.target.name]: e.target.value,
-    });
-  };
+    })
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
 
-    const { identifier, password } = form;
+    const { identifier, password } = form
 
-    let newError: FormError = {};
+    let newError: FormError = {}
 
     if (!isValidIdentifier(identifier)) {
       setErrors({
         ...errors,
-        identifier: "Masukkan email atau nomor HP yang valid",
-      });
-      return;
+        identifier: 'Masukkan email atau nomor HP yang valid',
+      })
+      return
     }
 
     if (!isValidPassword(password)) {
-      setErrors({ ...errors, password: "Password minimal 6 karakter" });
-      return;
+      setErrors({ ...errors, password: 'Password minimal 6 karakter' })
+      return
     }
 
     if (Object.keys(newError).length > 0) {
-      setErrors(newError);
-      return;
+      setErrors(newError)
+      return
     }
 
-    setErrors({});
+    setErrors({})
 
     try {
-      await dispatch(loginUser({ identifier, password })).unwrap();
-      router.replace("/dashboard")
+      await dispatch(loginUser({ identifier, password })).unwrap()
+      router.replace('/dashboard')
     } catch (err) {
-      showAlert(`${err}`, "info");
+      showAlert(`${err}`, 'info')
     }
+  }
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   const { identifier, password } = form;
+  //   const res = await fetch("/api/auth/login", {
+  //     method: "POST",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //     },
+  //     credentials: "include", // optional tapi recommended
+  //     body: JSON.stringify({
+  //       identifier,
+  //       password,
+  //     }),
+  //   });
 
-  };
-if (isLoading) return <Spinner />;
+  //   const data = await res.json();
+  //   console.log(data);
+
+  //   if (res.ok) {
+  //     router.push("/dashboard");
+  //   } else {
+  //     alert(data.message);
+  //   }
+  // };
+  if (isLoading) return <Spinner />
 
   return (
     <LoginRedirectGuard>
@@ -96,14 +119,14 @@ if (isLoading) return <Spinner />;
                 onChange={handleChange}
                 className={`w-full mt-1 px-4 py-2 border rounded-lg text-black bg-white focus:outline-none focus:ring-2 ${
                   errors.identifier
-                    ? "border-red-500 focus:ring-red-500"
-                    : "focus:ring-blue-500"
+                    ? 'border-red-500 focus:ring-red-500'
+                    : 'focus:ring-blue-500'
                 }`}
                 required
               />
-              {errors["identifier"] && (
+              {errors['identifier'] && (
                 <p className="text-red-500 text-sm">
-                  {errors["identifier"] ?? ""}
+                  {errors['identifier'] ?? ''}
                 </p>
               )}
             </div>
@@ -113,21 +136,21 @@ if (isLoading) return <Spinner />;
               <label className="text-sm font-medium text-black">Password</label>
               <div className="relative mt-1">
                 <input
-                  type={showPassword ? "text" : "password"}
+                  type={showPassword ? 'text' : 'password'}
                   name="password"
                   placeholder="Masukkan password"
                   value={form.password}
                   onChange={handleChange}
                   className={`w-full mt-1 px-4 py-2 border rounded-lg text-black bg-white focus:outline-none focus:ring-2 ${
                     errors.password
-                      ? "border-red-500 focus:ring-red-500"
-                      : "focus:ring-blue-500"
+                      ? 'border-red-500 focus:ring-red-500'
+                      : 'focus:ring-blue-500'
                   }`}
                   required
                 />
-                {errors["password"] && (
+                {errors['password'] && (
                   <p className="text-red-500 text-sm">
-                    {errors["password"] ?? ""}
+                    {errors['password'] ?? ''}
                   </p>
                 )}
 
@@ -136,7 +159,7 @@ if (isLoading) return <Spinner />;
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-4 text-sm text-gray-600"
                 >
-                  {showPassword ? "Hide" : "Show"}
+                  {showPassword ? 'Hide' : 'Show'}
                 </button>
               </div>
             </div>
@@ -151,7 +174,7 @@ if (isLoading) return <Spinner />;
             <button
               type="button"
               className="w-full bg-transparent text-black rounded-lg font-normal hover:text-blue-700 transition"
-              onClick={() => router.push("/auth/forgot-password")}
+              onClick={() => router.push('/auth/forgot-password')}
             >
               Forgot Password?
             </button>
@@ -161,7 +184,7 @@ if (isLoading) return <Spinner />;
               <button
                 type="button"
                 className="px-2 bg-transparent text-blue-700 py-0 rounded-lg font-semibold hover:text-blue-700 transition"
-                onClick={() => router.push("/auth/signup")}
+                onClick={() => router.push('/auth/register')}
               >
                 Signup
               </button>
@@ -172,5 +195,5 @@ if (isLoading) return <Spinner />;
         </div>
       </div>
     </LoginRedirectGuard>
-  );
+  )
 }

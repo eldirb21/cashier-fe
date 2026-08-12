@@ -3,12 +3,14 @@ import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
+  
   const { pathname } = request.nextUrl;
 
   const isLoginPage = pathname === "/auth/login";
   const isDashboard = pathname.startsWith("/dashboard");
   const isHome = pathname === "/";
 
+  console.log(token, pathname, isLoginPage, isDashboard, isHome);
   if (!token && isDashboard) {
     return NextResponse.redirect(new URL("/auth/login", request.url));
   }

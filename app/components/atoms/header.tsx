@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import {
   HiOutlineHome,
@@ -174,7 +174,7 @@ export const Headers = () => {
   const [openSub, setOpenSub] = useState<string | null>(null);
   const [profileDropOpen, setProfileDropOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
-
+  const router = useRouter();
   const profileRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on outside click
@@ -239,13 +239,21 @@ export const Headers = () => {
     setProfileModalOpen(true);
   };
 
-  const handleLogout = () => {
-    setProfileDropOpen(false);
+  // const handleLogout = () => {
+  //   setProfileDropOpen(false);
 
-    // doLogout()
+  //   // doLogout()
 
-    // your logout logic
-    console.log("Logout");
+  //   // your logout logic
+  //   console.log("Logout");
+  // };
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", {
+      method: "POST",
+    });
+
+    router.push("/auth/login");
   };
 
   return (

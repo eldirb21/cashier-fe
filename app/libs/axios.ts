@@ -1,29 +1,31 @@
-"use client"
+'use client'
 
-import axios from "axios";
-import { getLocalStore } from "./cookies-client";
+import axios from 'axios'
 
 const axiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
   timeout: 10000,
+  withCredentials: true,
   headers: {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   },
-});
+})
+console.log(process.env.NEXT_PUBLIC_API_URL)
 
 // Request interceptor - otomatis sisipkan token kalau ada
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const token =
+      typeof window !== 'undefined' ? localStorage.getItem('token') : null
 
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      config.headers.Authorization = `Bearer ${token}`
     }
 
-    return config;
+    return config
   },
   (error) => Promise.reject(error),
-);
+)
 
 // Response interceptor - tangani error global
 axiosInstance.interceptors.response.use(
@@ -31,13 +33,13 @@ axiosInstance.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Token expired / unauthorized - bisa redirect ke login
-      if (typeof window !== "undefined") {
+      if (typeof window !== 'undefined') {
         // window.location.href = "/login";
       }
     }
 
-    return Promise.reject(error);
+    return Promise.reject(error)
   },
-);
+)
 
-export { axiosInstance };
+export { axiosInstance }
