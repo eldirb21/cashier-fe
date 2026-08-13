@@ -4,9 +4,11 @@ import {
   AuthState,
   axiosInstance,
   LoginCredentials,
+  setCookie,
+  removeCookie,
 } from "@/app/libs";
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { AxiosError } from "axios";
+import axios from "axios";
 
 const initialState: AuthState = {
   user: null,
@@ -20,21 +22,40 @@ export const loginUser = createAsyncThunk(
   "auth/login",
   async (credentials: LoginCredentials, { rejectWithValue }) => {
     try {
-      const { data } = await axiosInstance.post<AuthResponse>(
-        "/auth/login",
-        credentials,
-      );
+      const [res] = await Promise.all([
+        axiosInstance.post<AuthResponse>("/auth/login", credentials),
+        new Promise((resolve) => setTimeout(resolve, 500)),
+      ]);
 
-      const token = data?.data?.accessToken;
-      const refreshToken = data?.data?.refreshToken;
-      const user = data.data.user;
+      const responseData = res.data;
 
-      localStorage.setItem("token", data?.data?.accessToken);
+      const token = responseData?.data?.accessToken;
+      const refreshToken = responseData?.data?.refreshToken;
+      const user = responseData?.data?.user;
+
+      if (token) {
+        localStorage.setItem("token", token);
+        setCookie("token", token);
+      }
+      if (refreshToken) {
+        setCookie("refreshToken", refreshToken);
+      }
 
       return { user, token, refreshToken };
     } catch (err) {
-      const error = err as AxiosError<ApiErrorResponse>;
-      return rejectWithValue(error.response?.data?.message);
+      console.error("Login Thunk Error:", err);
+      if (axios.isAxiosError<ApiErrorResponse>(err)) {
+        const message =
+          err.response?.data?.message ||
+          err.message ||
+          "Login gagal. Periksa email dan password Anda.";
+        return rejectWithValue(message);
+      }
+      return rejectWithValue(
+        err instanceof Error
+          ? err.message
+          : "Terjadi kesalahan saat memproses login",
+      );
     }
   },
 );
@@ -45,7 +66,13 @@ const authSlice = createSlice({
   reducers: {
     logout: (state) => {
       state.user = null;
+      state.token = null;
       state.error = null;
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("token");
+      }
+      removeCookie("token");
+      removeCookie("refreshToken");
     },
     clearError: (state) => {
       state.error = null;

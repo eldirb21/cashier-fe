@@ -1,7 +1,9 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
+import { useAppDispatch } from "@/app/store/hooks";
+import { logout } from "@/app/store/slices/authSlices";
 import {
   HiOutlineHome,
   HiOutlineCube,
@@ -170,6 +172,9 @@ const ProfileDropdown = ({
 // ── Main Header ────────────────────────────────────────────────
 export const Headers = () => {
   const pathname = usePathname();
+  const dispatch = useAppDispatch();
+  const router = useRouter();
+
   const [isOpen, setIsOpen] = useState(false);
   const [openSub, setOpenSub] = useState<string | null>(null);
   const [profileDropOpen, setProfileDropOpen] = useState(false);
@@ -241,11 +246,8 @@ export const Headers = () => {
 
   const handleLogout = () => {
     setProfileDropOpen(false);
-
-    // doLogout()
-
-    // your logout logic
-    console.log("Logout");
+    dispatch(logout());
+    router.replace("/auth/login");
   };
 
   return (
