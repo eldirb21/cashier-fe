@@ -6,12 +6,41 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useSyncExternalStore,
 } from "react";
 
 export type Theme = "light" | "dark" | "emerald" | "ocean";
 
 const STORAGE_KEY = "cashier-theme";
 const DEFAULT_THEME: Theme = "light";
+const VALID_THEMES: Theme[] = ["light", "dark", "emerald", "ocean"];
+
+function subscribe(callback: () => void) {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener("storage", callback);
+  return () => window.removeEventListener("storage", callback);
+}
+
+function getThemeSnapshot(): Theme {
+  if (typeof window === "undefined") return DEFAULT_THEME;
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY) as Theme | null;
+    if (saved && VALID_THEMES.includes(saved)) return saved;
+  } catch {
+    // Ignore storage errors
+  }
+  return DEFAULT_THEME;
+}
+
+function getServerThemeSnapshot(): Theme {
+  return DEFAULT_THEME;
+}
+
+function applyThemeToDom(theme: Theme) {
+  if (typeof document !== "undefined" && document.documentElement) {
+    document.documentElement.setAttribute("data-theme", theme);
+  }
+}
 
 interface ThemeContextValue {
   theme: Theme;
@@ -23,38 +52,33 @@ const ThemeContext = createContext<ThemeContextValue>({
   setTheme: () => {},
 });
 
-function applyThemeToDom(theme: Theme) {
-  if (typeof document !== "undefined" && document.documentElement) {
-    document.documentElement.setAttribute("data-theme", theme);
-  }
-}
-
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(DEFAULT_THEME);
+  const storedTheme = useSyncExternalStore(
+    subscribe,
+    getThemeSnapshot,
+    getServerThemeSnapshot,
+  );
 
-  // Initial load from localStorage
+  const [overrideTheme, setOverrideTheme] = useState<Theme | null>(null);
+  const activeTheme = overrideTheme ?? storedTheme;
+
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY) as Theme | null;
-    const initial: Theme =
-      saved && ["light", "dark", "emerald", "ocean"].includes(saved)
-        ? saved
-        : DEFAULT_THEME;
-    setThemeState(initial);
-    applyThemeToDom(initial);
-  }, []);
+    applyThemeToDom(activeTheme);
+  }, [activeTheme]);
 
   const setTheme = useCallback((newTheme: Theme) => {
-    setThemeState(newTheme);
+    setOverrideTheme(newTheme);
     applyThemeToDom(newTheme);
     try {
       localStorage.setItem(STORAGE_KEY, newTheme);
+      window.dispatchEvent(new Event("storage"));
     } catch {
       // Ignore quota/security errors
     }
   }, []);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeContext.Provider value={{ theme: activeTheme, setTheme }}>
       {children}
     </ThemeContext.Provider>
   );
