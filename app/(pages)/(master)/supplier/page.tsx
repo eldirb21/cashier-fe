@@ -106,7 +106,7 @@ const Supplier = () => {
     setShowModal(true);
   };
 
-  const openEdit = (s) => {
+  const openEdit = (s: any) => {
     setEditTarget(s.id);
     setForm({ ...s });
     setShowModal(true);
@@ -124,7 +124,7 @@ const Supplier = () => {
     setShowModal(false);
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = (id: any) => {
     confirm({
       type: "danger",
       title: "Hapus Supplier?",

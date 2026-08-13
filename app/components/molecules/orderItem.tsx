@@ -1,6 +1,6 @@
 "use client";
 
-import { PaymentModal } from "@/app/(pages)/transactions/payment/page";
+import { PaymentModal } from "./paymentModal";
 import React, { useState } from "react";
 import { HiOutlineCube } from "react-icons/hi";
 import { HiMinus, HiPlus, HiReceiptPercent } from "react-icons/hi2";

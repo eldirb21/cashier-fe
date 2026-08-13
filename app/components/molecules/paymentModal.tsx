@@ -7,10 +7,7 @@ import {
   HiCreditCard,
   HiUserCircle,
   HiReceiptPercent,
-  HiArrowPath,
 } from "react-icons/hi2";
-
-// ── helpers ───────────────────────────────────────────────────────────────────
 
 const formatRupiah = (amount: number): string =>
   new Intl.NumberFormat("id-ID", {
@@ -21,8 +18,6 @@ const formatRupiah = (amount: number): string =>
 
 const parseNumber = (value: string): number =>
   Number(value.replace(/[^0-9]/g, "")) || 0;
-
-// ── types ─────────────────────────────────────────────────────────────────────
 
 type PaymentMethod = "cash" | "transfer" | "member";
 
@@ -58,21 +53,15 @@ interface PaymentResult {
   grand_total: number;
 }
 
-// ── mock members ──────────────────────────────────────────────────────────────
-
 const members: Member[] = [
   { id: "m1", name: "Budi Santoso", points: 1200, phone: "08123456789" },
   { id: "m2", name: "Siti Rahayu", points: 500, phone: "08987654321" },
   { id: "m3", name: "Ahmad Fauzi", points: 3000, phone: "08234567890" },
 ];
 
-// ── quick cash buttons ────────────────────────────────────────────────────────
-
 const QUICK_CASH = [10000, 20000, 50000, 100000];
 
-// ── component ─────────────────────────────────────────────────────────────────
-
-function PaymentModal({
+export function PaymentModal({
   isOpen,
   onClose,
   order,
@@ -88,7 +77,6 @@ function PaymentModal({
   const [transferRef, setTransferRef] = useState("");
   const [isPaid, setIsPaid] = useState(false);
 
-  // derived
   const extraDiscAmt = parseNumber(extraDiscount);
   const pointsDisc =
     usePoints && selectedMember
@@ -135,7 +123,6 @@ function PaymentModal({
 
   if (!isOpen) return null;
 
-  // ── success screen ──────────────────────────────────────────────────────────
   if (isPaid) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
@@ -208,11 +195,9 @@ function PaymentModal({
     );
   }
 
-  // ── main modal ──────────────────────────────────────────────────────────────
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg flex flex-col max-h-[92vh] overflow-hidden">
-        {/* header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div>
             <h2 className="text-base font-extrabold text-gray-900">
@@ -231,7 +216,6 @@ function PaymentModal({
         </div>
 
         <div className="overflow-y-auto flex-1 px-6 py-5 space-y-5">
-          {/* order summary card */}
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-5 text-white">
             <div className="flex justify-between items-start mb-4">
               <div>
@@ -275,7 +259,6 @@ function PaymentModal({
             </div>
           </div>
 
-          {/* method selector */}
           <div>
             <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
               Metode Pembayaran
@@ -308,7 +291,6 @@ function PaymentModal({
             </div>
           </div>
 
-          {/* extra discount */}
           <div>
             <label className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5 mb-2">
               <HiReceiptPercent size={13} className="text-emerald-400" />
@@ -326,7 +308,6 @@ function PaymentModal({
             />
           </div>
 
-          {/* cash section */}
           {method === "cash" && (
             <div className="space-y-3">
               <div>
@@ -345,7 +326,6 @@ function PaymentModal({
                 />
               </div>
 
-              {/* quick cash */}
               <div className="grid grid-cols-4 gap-2">
                 {QUICK_CASH.map((amt) => {
                   const rounded = Math.ceil(finalTotal / amt) * amt;
@@ -361,7 +341,6 @@ function PaymentModal({
                 })}
               </div>
 
-              {/* change display */}
               {cashInput && (
                 <div
                   className={`rounded-2xl p-4 flex items-center justify-between ${
@@ -385,7 +364,6 @@ function PaymentModal({
             </div>
           )}
 
-          {/* transfer section */}
           {method === "transfer" && (
             <div className="space-y-3">
               <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
@@ -432,7 +410,6 @@ function PaymentModal({
             </div>
           )}
 
-          {/* member section */}
           {method === "member" && (
             <div className="space-y-3">
               <div>
@@ -544,7 +521,6 @@ function PaymentModal({
           )}
         </div>
 
-        {/* footer */}
         <div className="px-6 py-4 border-t border-gray-100 flex gap-3">
           <button
             onClick={onClose}
@@ -569,8 +545,3 @@ function PaymentModal({
     </div>
   );
 }
-
-export default function PaymentPage() {
-  return null;
-}
-

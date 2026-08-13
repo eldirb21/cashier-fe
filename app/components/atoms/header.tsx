@@ -2,8 +2,8 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
-import { useAppDispatch } from "@/app/store/hooks";
-import { logout } from "@/app/store/slices/authSlices";
+import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
+import { logout, selectCurrentUser } from "@/app/store/slices/authSlice";
 import { useI18n } from "@/app/i18n";
 import { LanguageSwitcher } from "./languageSwitcher";
 import { ThemeSwitcher } from "./themeSwitcher";
@@ -177,6 +177,7 @@ const ProfileDropdown = ({
 export const Headers = () => {
   const pathname = usePathname();
   const dispatch = useAppDispatch();
+  const user = useAppSelector(selectCurrentUser);
   const router = useRouter();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -344,9 +345,11 @@ export const Headers = () => {
               >
                 <div className="hidden md:block text-right">
                   <p className="text-[12px] font-bold text-gray-700 leading-none mb-1">
-                    admin
+                    {user?.name || user?.username || "admin"}
                   </p>
-                  <p className="text-[10px] text-gray-400">admin@gmail.com</p>
+                  <p className="text-[10px] text-gray-400">
+                    {user?.email || "admin@gmail.com"}
+                  </p>
                 </div>
 
                 <button

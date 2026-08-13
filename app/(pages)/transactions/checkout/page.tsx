@@ -1,7 +1,9 @@
+"use client";
+
 import { useState } from 'react';
 import { Br, Cut, Line, Printer, Row, render, Text } from 'react-thermal-printer';
 
-export function Checkout() {
+export default function Checkout() {
   const receipt = (
     <Printer type="epson" width={42} characterSet="korea" debug={true}>
       <Text size={{ width: 2, height: 2 }}>9,500원</Text>
@@ -40,13 +42,13 @@ export function Checkout() {
     </Printer>
   );
 
-  const [port, setPort] = useState<SerialPort>();
+  const [port, setPort] = useState<any>();
   const print = async () => {
     const data = await render(receipt);
 
     let _port = port;
     if (_port == null) {
-      _port = await navigator.serial.requestPort();
+      _port = await (navigator as any).serial.requestPort();
       await _port.open({ baudRate: 9600 });
       setPort(_port);
     }

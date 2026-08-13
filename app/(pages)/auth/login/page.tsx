@@ -8,7 +8,7 @@ import {
 import { useConfirm } from "@/app/components/molecules";
 import { isValidIdentifier, isValidPassword } from "@/app/libs";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import { loginUser } from "@/app/store/slices/authSlices";
+import { loginUser, selectIsAuthLoading } from "@/app/store/slices/authSlice";
 import { useI18n } from "@/app/i18n";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -20,7 +20,7 @@ type FormError = {
 
 export default function Login() {
   const dispatch = useAppDispatch();
-  const { isLoading } = useAppSelector((state) => state.auth);
+  const isLoading = useAppSelector(selectIsAuthLoading);
   const { showAlert } = useConfirm();
   const router = useRouter();
   const { t } = useI18n();

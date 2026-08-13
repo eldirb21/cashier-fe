@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ConfirmationProvider } from "./components/molecules";
-import StoreProvider from "@/storeProvider";
+import StoreProvider from "@/app/store/StoreProvider";
 import { LanguageProvider } from "./i18n";
 import { ThemeProvider } from "./theme";
 
