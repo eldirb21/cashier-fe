@@ -23,14 +23,16 @@ const ThemeContext = createContext<ThemeContextValue>({
   setTheme: () => {},
 });
 
-function applyTheme(theme: Theme) {
-  document.documentElement.setAttribute("data-theme", theme);
+function applyThemeToDom(theme: Theme) {
+  if (typeof document !== "undefined" && document.documentElement) {
+    document.documentElement.setAttribute("data-theme", theme);
+  }
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(DEFAULT_THEME);
 
-  // Hydrate from localStorage and apply to <html> after mount
+  // Initial load from localStorage
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY) as Theme | null;
     const initial: Theme =
@@ -38,13 +40,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         ? saved
         : DEFAULT_THEME;
     setThemeState(initial);
-    applyTheme(initial);
+    applyThemeToDom(initial);
   }, []);
 
   const setTheme = useCallback((newTheme: Theme) => {
     setThemeState(newTheme);
-    applyTheme(newTheme);
-    localStorage.setItem(STORAGE_KEY, newTheme);
+    applyThemeToDom(newTheme);
+    try {
+      localStorage.setItem(STORAGE_KEY, newTheme);
+    } catch {
+      // Ignore quota/security errors
+    }
   }, []);
 
   return (

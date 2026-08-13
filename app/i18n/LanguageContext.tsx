@@ -29,20 +29,34 @@ const LanguageContext = createContext<LanguageContextValue>({
   setLocale: () => {},
 });
 
+function applyLangToDom(locale: Locale) {
+  if (typeof document !== "undefined" && document.documentElement) {
+    document.documentElement.setAttribute("lang", locale);
+  }
+}
+
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>("id");
 
-  // Hydrate from localStorage after mount (client-only)
+  // Hydrate from localStorage after mount
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY) as Locale | null;
     if (saved && saved in localeMap) {
       setLocaleState(saved);
+      applyLangToDom(saved);
+    } else {
+      applyLangToDom("id");
     }
   }, []);
 
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);
-    localStorage.setItem(STORAGE_KEY, newLocale);
+    applyLangToDom(newLocale);
+    try {
+      localStorage.setItem(STORAGE_KEY, newLocale);
+    } catch {
+      // Ignore storage errors
+    }
   }, []);
 
   return (
