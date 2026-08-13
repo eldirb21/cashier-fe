@@ -17,7 +17,6 @@ const initialState: AuthState = {
   token: null,
 };
 
-// Async thunk - untuk API call
 export const loginUser = createAsyncThunk(
   "auth/login",
   async (credentials: LoginCredentials, { rejectWithValue }) => {

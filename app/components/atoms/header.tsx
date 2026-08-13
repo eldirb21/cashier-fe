@@ -179,7 +179,7 @@ export const Headers = () => {
   const [openSub, setOpenSub] = useState<string | null>(null);
   const [profileDropOpen, setProfileDropOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
-
+  const router = useRouter();
   const profileRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on outside click
