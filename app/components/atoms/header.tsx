@@ -4,13 +4,15 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { useAppDispatch } from "@/app/store/hooks";
 import { logout } from "@/app/store/slices/authSlices";
+import { useI18n } from "@/app/i18n";
+import { LanguageSwitcher } from "./languageSwitcher";
+import { ThemeSwitcher } from "./themeSwitcher";
 import {
   HiOutlineHome,
   HiOutlineCube,
   HiOutlineUserGroup,
   HiOutlineShoppingCart,
   HiOutlineUsers,
-  HiOutlineMoon,
   HiOutlineMenu,
   HiOutlineX,
   HiChevronDown,
@@ -28,6 +30,7 @@ const ProfileModal = ({
   isOpen: boolean;
   onClose: () => void;
 }) => {
+  const { t } = useI18n();
   if (!isOpen) return null;
 
   return (
@@ -79,7 +82,7 @@ const ProfileModal = ({
                 />
                 <div>
                   <p className="text-[10px] text-gray-400 font-medium">
-                    Username
+                    {t.profile.username}
                   </p>
                   <p className="text-[13px] font-semibold text-gray-700">
                     admin
@@ -93,7 +96,9 @@ const ProfileModal = ({
                   size={18}
                 />
                 <div>
-                  <p className="text-[10px] text-gray-400 font-medium">Email</p>
+                  <p className="text-[10px] text-gray-400 font-medium">
+                    {t.profile.email}
+                  </p>
                   <p className="text-[13px] font-semibold text-gray-700">
                     admin@gmail.com
                   </p>
@@ -109,19 +114,17 @@ const ProfileModal = ({
                 onClick={onClose}
               >
                 <HiOutlineUser size={16} />
-                View Profile
+                {t.profile.viewProfile}
               </a>
 
               <button
                 onClick={() => {
-                  // handle logout logic here
-                  console.log("Logout");
                   onClose();
                 }}
                 className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl border border-red-200 text-red-500 text-[13px] font-bold hover:bg-red-50 transition-colors"
               >
                 <HiOutlineLogout size={16} />
-                Logout
+                {t.profile.logout}
               </button>
             </div>
           </div>
@@ -141,6 +144,7 @@ const ProfileDropdown = ({
   onViewProfile: () => void;
   onLogout: () => void;
 }) => {
+  const { t } = useI18n();
   if (!isOpen) return null;
 
   return (
@@ -155,7 +159,7 @@ const ProfileDropdown = ({
         className="flex items-center gap-2 w-full px-4 py-2 text-[12px] font-semibold text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
       >
         <HiOutlineUser size={15} />
-        View Profile
+        {t.profile.viewProfile}
       </button>
 
       <button
@@ -163,7 +167,7 @@ const ProfileDropdown = ({
         className="flex items-center gap-2 w-full px-4 py-2 text-[12px] font-semibold text-red-500 hover:bg-red-50 transition-colors"
       >
         <HiOutlineLogout size={15} />
-        Logout
+        {t.profile.logout}
       </button>
     </div>
   );
@@ -195,42 +199,44 @@ export const Headers = () => {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  const { t } = useI18n();
+
   const menuItems = [
-    { name: "HOME", path: "/dashboard", icon: <HiOutlineHome size={20} /> },
+    { name: t.nav.home, path: "/dashboard", icon: <HiOutlineHome size={20} /> },
     {
-      name: "MASTER",
+      name: t.nav.master,
       icon: <HiOutlineCube size={20} />,
       hasSub: true,
       sub: [
-        { name: "CATEGORIES", path: "/categories" },
-        { name: "PRODUCT", path: "/products" },
-        { name: "SUPPLIER", path: "/supplier" },
+        { name: t.nav.categories, path: "/categories" },
+        { name: t.nav.product, path: "/products" },
+        { name: t.nav.supplier, path: "/supplier" },
       ],
     },
     {
-      name: "CUSTOMERS",
+      name: t.nav.customers,
       path: "/customers",
       icon: <HiOutlineUserGroup size={20} />,
     },
     {
-      name: "TRANSACTIONS",
+      name: t.nav.transactions,
       path: "/transactions",
       icon: <HiOutlineShoppingCart size={20} />,
     },
     {
-      name: "REPORT",
+      name: t.nav.report,
       icon: <HiOutlineCube size={20} />,
       hasSub: true,
       sub: [
-        { name: "PROFIT", path: "/report/profit" },
-        { name: "SALES", path: "/report/sales" },
-        { name: "SHIFT", path: "/report/shift-Kasir" },
-        { name: "STOCK & MUTASI", path: "/report/stock-dan-mutasi" },
-        { name: "VOID / RETURN", path: "/report/void-return" },
-        { name: "SUPPLIER", path: "/report/supplier" },
-        { name: "MEMBER / POIN", path: "/report/member-poin" },
-        { name: "DISKON & PROMO", path: "/report/discont-promo" },
-        { name: "METODE PEMBAYARAN", path: "/report/payment-report" },
+        { name: t.nav.profit, path: "/report/profit" },
+        { name: t.nav.sales, path: "/report/sales" },
+        { name: t.nav.shift, path: "/report/shift-Kasir" },
+        { name: t.nav.stockMutasi, path: "/report/stock-dan-mutasi" },
+        { name: t.nav.voidReturn, path: "/report/void-return" },
+        { name: t.nav.supplier, path: "/report/supplier" },
+        { name: t.nav.memberPoin, path: "/report/member-poin" },
+        { name: t.nav.discountPromo, path: "/report/discont-promo" },
+        { name: t.nav.paymentMethod, path: "/report/payment-report" },
       ],
     },
   ];
@@ -321,16 +327,15 @@ export const Headers = () => {
                   className="flex items-center gap-2 px-3 py-5 text-[11px] font-bold text-gray-500 hover:text-blue-600"
                 >
                   <HiOutlineUsers size={20} />
-                  USERS
+                  {t.nav.users}
                 </a>
               </nav>
             </div>
 
-            {/* RIGHT: Moon + Profile */}
-            <div className="flex items-center gap-3 sm:gap-5">
-              <button className="text-gray-500 hover:text-blue-600 transition-colors">
-                <HiOutlineMoon size={22} />
-              </button>
+            {/* RIGHT: Theme + Language + Profile */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              <ThemeSwitcher />
+              <LanguageSwitcher />
 
               {/* Profile Section — now clickable with dropdown */}
               <div
@@ -436,14 +441,14 @@ export const Headers = () => {
                   className="flex items-center gap-3 px-4 py-3 text-xs font-bold rounded-lg w-full text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
                 >
                   <HiOutlineUser size={18} />
-                  View Profile
+                  {t.profile.viewProfile}
                 </button>
                 <button
                   onClick={handleLogout}
                   className="flex items-center gap-3 px-4 py-3 text-xs font-bold rounded-lg w-full text-red-500 hover:bg-red-50 transition-colors"
                 >
                   <HiOutlineLogout size={18} />
-                  Logout
+                  {t.profile.logout}
                 </button>
               </div>
             </div>

@@ -2,32 +2,154 @@
 
 @theme {
   /* Colors */
-  --color-brand-primary: #126B57;
-  --color-brand-primary-tint: #E6F4FE;
-  --color-brand-accent: #E7A73A;
-  --color-brand-accent-tint: #E6F4FE;
-  --color-brand-ink: #17212B;
-  --color-brand-surface: #FFFFFF;
-  --color-brand-bg-default: #FCFCFD;
-  --color-brand-bg-warm: #F9F9FB;
-  --color-brand-bg: #F5F7FA;
-  --color-brand-success: #126B57;
-  --color-brand-warning: #E7A73A;
-  --color-brand-error: #C9464D;
-  --color-brand-info: #3B6EDC;
+  --color-brand-primary: #126b57;
+  --color-brand-primary-tint: #e6f4fe;
+  --color-brand-accent: #e7a73a;
+  --color-brand-accent-tint: #e6f4fe;
+  --color-brand-ink: #17212b;
+  --color-brand-surface: #ffffff;
+  --color-brand-bg-default: #fcfcfd;
+  --color-brand-bg-warm: #f9f9fb;
+  --color-brand-bg: #f5f7fa;
+  --color-brand-success: #126b57;
+  --color-brand-warning: #e7a73a;
+  --color-brand-error: #c9464d;
+  --color-brand-info: #3b6edc;
 
   /* Effect / Shadows */
   --shadow-soft: 0 2px 8px rgba(23, 33, 43, 0.06);
   --shadow-card: 0 18px 44px rgba(23, 33, 43, 0.16);
 }
 
-:root {
-  --background: #FCFCFD;
-  --foreground: #17212B;
+/* ═══════════════════════════════════════════════════════════
+   THEME TOKENS — overridden via data-theme on <html>
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Light (default) ──────────────────────────────────────── */
+:root,
+[data-theme="light"] {
+  --bg: #fcfcfd;
+  --bg-subtle: #f5f7fa;
+  --bg-card: #ffffff;
+  --fg: #17212b;
+  --fg-muted: #6b7280;
+  --border: #e5e7eb;
+  --surface: #ffffff;
+
+  --theme-primary: #126b57;
+  --theme-primary-hover: #0e5444;
+  --theme-primary-tint: #e6f4fe;
+  --theme-primary-ring: rgba(18, 107, 87, 0.15);
+
+  --header-bg: #ffffff;
+  --header-border: #f3f4f6;
+  --nav-text: #6b7280;
+  --nav-active: #3b82f6;
+  --nav-active-border: #3b82f6;
+
+  --input-bg: rgba(249, 250, 251, 0.5);
+  --input-border: #e5e7eb;
+  --input-focus-bg: #ffffff;
 }
 
+/* ── Dark ─────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg: #0f172a;
+  --bg-subtle: #1e293b;
+  --bg-card: #1e293b;
+  --fg: #f1f5f9;
+  --fg-muted: #94a3b8;
+  --border: #334155;
+  --surface: #1e293b;
+
+  --theme-primary: #34d399;
+  --theme-primary-hover: #10b981;
+  --theme-primary-tint: rgba(52, 211, 153, 0.1);
+  --theme-primary-ring: rgba(52, 211, 153, 0.2);
+
+  --header-bg: #1e293b;
+  --header-border: #334155;
+  --nav-text: #94a3b8;
+  --nav-active: #34d399;
+  --nav-active-border: #34d399;
+
+  --input-bg: rgba(15, 23, 42, 0.6);
+  --input-border: #334155;
+  --input-focus-bg: #0f172a;
+}
+
+/* ── Emerald ──────────────────────────────────────────────── */
+[data-theme="emerald"] {
+  --bg: #f0fdf4;
+  --bg-subtle: #dcfce7;
+  --bg-card: #ffffff;
+  --fg: #14532d;
+  --fg-muted: #4b7a5e;
+  --border: #bbf7d0;
+  --surface: #ffffff;
+
+  --theme-primary: #16a34a;
+  --theme-primary-hover: #15803d;
+  --theme-primary-tint: #dcfce7;
+  --theme-primary-ring: rgba(22, 163, 74, 0.2);
+
+  --header-bg: #14532d;
+  --header-border: #166534;
+  --nav-text: #bbf7d0;
+  --nav-active: #4ade80;
+  --nav-active-border: #4ade80;
+
+  --input-bg: rgba(240, 253, 244, 0.6);
+  --input-border: #bbf7d0;
+  --input-focus-bg: #ffffff;
+}
+
+/* ── Ocean ────────────────────────────────────────────────── */
+[data-theme="ocean"] {
+  --bg: #eff6ff;
+  --bg-subtle: #dbeafe;
+  --bg-card: #ffffff;
+  --fg: #1e3a5f;
+  --fg-muted: #4a6fa5;
+  --border: #bfdbfe;
+  --surface: #ffffff;
+
+  --theme-primary: #2563eb;
+  --theme-primary-hover: #1d4ed8;
+  --theme-primary-tint: #dbeafe;
+  --theme-primary-ring: rgba(37, 99, 235, 0.2);
+
+  --header-bg: #1e3a5f;
+  --header-border: #1e40af;
+  --nav-text: #bfdbfe;
+  --nav-active: #60a5fa;
+  --nav-active-border: #60a5fa;
+
+  --input-bg: rgba(239, 246, 255, 0.6);
+  --input-border: #bfdbfe;
+  --input-focus-bg: #ffffff;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BASE STYLES — consume theme tokens
+   ═══════════════════════════════════════════════════════════ */
+
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg);
+  color: var(--fg);
   font-family: Inter, system-ui, sans-serif;
+  transition:
+    background 0.3s ease,
+    color 0.3s ease;
+}
+
+/* Smooth theme transitions on key elements */
+header,
+.card,
+input,
+button {
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    color 0.2s ease;
 }

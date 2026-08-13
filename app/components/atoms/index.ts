@@ -5,3 +5,5 @@ export * from "./footer";
 export * from "./modal";
 export * from "./receiptPrinter";
 export * from "./spinner";
+export * from "./languageSwitcher";
+export * from "./themeSwitcher";

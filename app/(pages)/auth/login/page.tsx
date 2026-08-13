@@ -1,10 +1,15 @@
 "use client";
 
-import { Footer, LoginRedirectGuard } from "@/app/components/atoms";
+import {
+  Footer,
+  LoginRedirectGuard,
+  LanguageSwitcher,
+} from "@/app/components/atoms";
 import { useConfirm } from "@/app/components/molecules";
 import { isValidIdentifier, isValidPassword } from "@/app/libs";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import { loginUser } from "@/app/store/slices/authSlices";
+import { useI18n } from "@/app/i18n";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -18,6 +23,7 @@ export default function Login() {
   const { isLoading } = useAppSelector((state) => state.auth);
   const { showAlert } = useConfirm();
   const router = useRouter();
+  const { t } = useI18n();
 
   const [form, setForm] = useState({
     identifier: "john@mail.com",
@@ -47,11 +53,11 @@ export default function Login() {
     const newErrors: FormError = {};
 
     if (!isValidIdentifier(identifier)) {
-      newErrors.identifier = "Masukkan email atau nomor HP yang valid";
+      newErrors.identifier = t.login.identifierError;
     }
 
     if (!isValidPassword(password)) {
-      newErrors.password = "Password minimal 6 karakter";
+      newErrors.password = t.login.passwordError;
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -92,6 +98,11 @@ export default function Login() {
 
         {/* Main Card Container with Glassmorphism */}
         <div className="relative z-10 w-full max-w-md bg-white/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-[0_20px_50px_rgba(18,107,87,0.12)] border border-white/80 p-6 sm:p-9 transition-all duration-300">
+          {/* Language Switcher — top-right inside card */}
+          <div className="absolute top-4 right-4 sm:top-5 sm:right-5">
+            <LanguageSwitcher />
+          </div>
+
           {/* Header & Branding */}
           <div className="flex flex-col items-center text-center mb-6 sm:mb-8">
             <div className="relative">
@@ -112,10 +123,10 @@ export default function Login() {
               </div>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-brand-ink tracking-tight">
-              Login Kasir
+              {t.login.title}
             </h1>
             <p className="text-xs sm:text-sm text-gray-500 mt-1">
-              Masukkan akun Anda untuk mengakses sistem kasir
+              {t.login.subtitle}
             </p>
           </div>
 
@@ -124,7 +135,7 @@ export default function Login() {
             {/* Identifier Input */}
             <div>
               <label className="block text-xs sm:text-sm font-semibold text-brand-ink mb-1.5">
-                Email / Nomor HP
+                {t.login.identifierLabel}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
@@ -145,7 +156,7 @@ export default function Login() {
                 <input
                   type="text"
                   name="identifier"
-                  placeholder="contoh@mail.com atau 08123456789"
+                  placeholder={t.login.identifierPlaceholder}
                   value={form.identifier}
                   onChange={handleChange}
                   disabled={isLoading}
@@ -181,7 +192,7 @@ export default function Login() {
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="block text-xs sm:text-sm font-semibold text-brand-ink">
-                  Password
+                  {t.login.passwordLabel}
                 </label>
                 <button
                   type="button"
@@ -189,7 +200,7 @@ export default function Login() {
                   className="text-xs text-brand-primary hover:text-[#0e5444] hover:underline font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   onClick={() => router.push("/auth/forgot-password")}
                 >
-                  Lupa Password?
+                  {t.login.forgotPassword}
                 </button>
               </div>
               <div className="relative">
@@ -211,7 +222,7 @@ export default function Login() {
                 <input
                   type={showPassword ? "text" : "password"}
                   name="password"
-                  placeholder="Masukkan password"
+                  placeholder={t.login.passwordPlaceholder}
                   value={form.password}
                   onChange={handleChange}
                   disabled={isLoading}
@@ -294,23 +305,23 @@ export default function Login() {
               {isLoading ? (
                 <>
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Memuat...
+                  {t.login.loading}
                 </>
               ) : (
-                "Masuk ke Kasir"
+                t.login.submit
               )}
             </button>
 
             {/* Signup prompt */}
             <div className="pt-2 text-center text-xs sm:text-sm text-gray-600 flex justify-center items-center gap-1.5">
-              <span>Belum punya akun?</span>
+              <span>{t.login.noAccount}</span>
               <button
                 type="button"
                 disabled={isLoading}
                 className="text-brand-primary font-bold hover:text-[#0e5444] hover:underline disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 onClick={() => router.push("/auth/signup")}
               >
-                Daftar Sekarang
+                {t.login.register}
               </button>
             </div>
           </form>
