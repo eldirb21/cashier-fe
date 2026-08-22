@@ -52,6 +52,16 @@ const zh: Translations = {
     copyright: "© 2026 Eldir 电话/wa: +62 813 1018 1765",
   },
 
+  // ── Dashboard ──────────────────────────────────────────────
+  dashboard: {
+    title: "仪表盘",
+    welcome: "欢迎回来",
+    todaySales: "今日销售额",
+    totalTransactions: "总交易数",
+    totalProducts: "总产品数",
+    totalCustomers: "总客户数",
+  },
+
   // ── Language Switcher ───────────────────────────────────────
   language: {
     label: "语言",

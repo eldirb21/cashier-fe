@@ -52,6 +52,16 @@ const en: Translations = {
     copyright: "© 2026 Eldir phone/wa: +62 813 1018 1765",
   },
 
+  // ── Dashboard ──────────────────────────────────────────────
+  dashboard: {
+    title: "Dashboard",
+    welcome: "Welcome back",
+    todaySales: "Today's Sales",
+    totalTransactions: "Total Transactions",
+    totalProducts: "Total Products",
+    totalCustomers: "Total Customers",
+  },
+
   // ── Language Switcher ───────────────────────────────────────
   language: {
     label: "Language",

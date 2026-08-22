@@ -4,6 +4,7 @@ import { ConfirmationProvider } from "./components/molecules";
 import StoreProvider from "@/app/store/StoreProvider";
 import { LanguageProvider } from "./i18n";
 import { ThemeProvider } from "./theme";
+import { AuthInitializer } from "./components/atoms/AuthInitializer";
 
 export const metadata: Metadata = {
   title: "Cashier",
@@ -21,7 +22,9 @@ export default function RootLayout({
         <StoreProvider>
           <ThemeProvider>
             <LanguageProvider>
-              <ConfirmationProvider>{children}</ConfirmationProvider>
+              <ConfirmationProvider>
+                <AuthInitializer>{children}</AuthInitializer>
+              </ConfirmationProvider>
             </LanguageProvider>
           </ThemeProvider>
         </StoreProvider>

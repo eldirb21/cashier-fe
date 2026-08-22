@@ -1,5 +1,14 @@
-import { Spinner } from "./components/atoms";
+// app/page.tsx
+import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
-export default function Home() {
-  return <Spinner />;
+export default async function Home() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+
+  if (token) {
+    redirect("/dashboard");
+  } else {
+    redirect("/login");
+  }
 }

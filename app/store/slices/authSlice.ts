@@ -1,66 +1,99 @@
-import {
-  ApiErrorResponse,
-  AuthResponse,
-  AuthState,
-  axiosInstance,
-  LoginCredentials,
-  setCookie,
-  removeCookie,
-  User,
-} from "@/app/libs";
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { RoleType } from "@/app/libs/roles";
+import { axiosInstance, setCookie, removeCookie, getCookie } from "@/app/libs";
 import axios from "axios";
-import type { RootState } from "../index";
+
+export type User = {
+  id: string;
+  name: string;
+  identifier: string;
+  role: RoleType;
+};
+
+type AuthState = {
+  user: User | null;
+  isLoading: boolean;
+  isInitialized: boolean;
+  error: string | null;
+};
 
 const initialState: AuthState = {
   user: null,
   isLoading: false,
+  isInitialized: false,
   error: null,
-  token: null,
 };
 
-export const loginUser = createAsyncThunk<
-  { user: User; token: string; refreshToken: string },
-  LoginCredentials,
-  { rejectValue: string }
->("auth/login", async (credentials, { rejectWithValue }) => {
-  try {
-    const res = await axiosInstance.post<AuthResponse>(
-      "/auth/login",
-      credentials,
-    );
+export const loginUser = createAsyncThunk(
+  "auth/login",
+  async (
+    payload: { identifier: string; password: string },
+    { rejectWithValue },
+  ) => {
+    try {
+      const res = await axiosInstance.post("/auth/login", payload);
+      const data = res.data?.data;
+      if (!data) throw new Error("Data login tidak ditemukan");
 
-    const responseData = res.data;
+      const { accessToken, refreshToken, user } = data;
 
-    const token = responseData?.data?.accessToken;
-    const refreshToken = responseData?.data?.refreshToken;
-    const user = responseData?.data?.user;
-
-    if (token) {
-      if (typeof window !== "undefined") {
-        localStorage.setItem("token", token);
+      if (accessToken) {
+        if (typeof window !== "undefined") {
+          localStorage.setItem("token", accessToken);
+        }
+        setCookie("token", accessToken);
       }
-      setCookie("token", token);
-    }
-    if (refreshToken) {
-      setCookie("refreshToken", refreshToken);
-    }
 
-    return { user, token, refreshToken };
-  } catch (err) {
-    console.error("Login Thunk Error:", err);
-    if (axios.isAxiosError<ApiErrorResponse>(err)) {
-      const message =
-        err.response?.data?.message ||
-        err.message ||
-        "Login gagal. Periksa email dan password Anda.";
-      return rejectWithValue(message);
+      if (refreshToken) {
+        setCookie("refreshToken", refreshToken);
+      }
+
+      return user as User;
+    } catch (err: any) {
+      if (axios.isAxiosError(err)) {
+        const message =
+          err.response?.data?.message ||
+          err.message ||
+          "Login gagal. Periksa email dan password Anda.";
+        return rejectWithValue(message);
+      }
+      return rejectWithValue(
+        err instanceof Error
+          ? err.message
+          : "Terjadi kesalahan saat memproses login",
+      );
     }
-    return rejectWithValue(
-      err instanceof Error
-        ? err.message
-        : "Terjadi kesalahan saat memproses login",
-    );
+  },
+);
+
+// dipanggil saat app pertama load (root layout) untuk rehydrate Redux
+export const fetchCurrentUser = createAsyncThunk(
+  "auth/fetchCurrentUser",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await axiosInstance.get("/auth/me");
+      return res.data?.data?.user as User;
+    } catch (err) {
+      return rejectWithValue(err);
+    }
+  },
+);
+
+export const logoutUser = createAsyncThunk("auth/logout", async () => {
+  try {
+    const refreshToken =
+      typeof document !== "undefined" ? getCookie("refreshToken") : null;
+    if (refreshToken) {
+      await axiosInstance.post("/auth/logout", { refreshToken });
+    }
+  } catch (err) {
+    console.error("Logout error:", err);
+  } finally {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token");
+    }
+    removeCookie("token");
+    removeCookie("refreshToken");
   }
 });
 
@@ -70,7 +103,6 @@ const authSlice = createSlice({
   reducers: {
     logout: (state) => {
       state.user = null;
-      state.token = null;
       state.error = null;
       if (typeof window !== "undefined") {
         localStorage.removeItem("token");
@@ -90,23 +122,33 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload.user;
-        state.token = action.payload.token;
+        state.user = action.payload;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload ?? "Terjadi kesalahan";
+        state.error = (action.payload as string) ?? "Terjadi kesalahan";
+      })
+      .addCase(fetchCurrentUser.fulfilled, (state, action) => {
+        state.user = action.payload;
+        state.isInitialized = true;
+      })
+      .addCase(fetchCurrentUser.rejected, (state) => {
+        state.user = null;
+        state.isInitialized = true;
+      })
+      .addCase(logoutUser.fulfilled, (state) => {
+        state.user = null;
       });
   },
 });
 
 export const { logout, clearError } = authSlice.actions;
 
-// Encapsulated Selectors
-export const selectAuth = (state: RootState) => state.auth;
-export const selectCurrentUser = (state: RootState) => state.auth.user;
-export const selectIsAuthLoading = (state: RootState) => state.auth.isLoading;
-export const selectAuthError = (state: RootState) => state.auth.error;
-export const selectAuthToken = (state: RootState) => state.auth.token;
+export const selectIsAuthLoading = (state: any) => state.auth.isLoading;
+export const selectCurrentUser = (state: any) => state.auth.user;
+export const selectUserRole = (state: any): RoleType | undefined =>
+  state.auth.user?.role;
+export const selectIsInitialized = (state: any) => state.auth.isInitialized;
+export const selectAuthError = (state: any) => state.auth.error;
 
 export default authSlice.reducer;

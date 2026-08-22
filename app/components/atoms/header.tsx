@@ -3,7 +3,11 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
-import { logout, selectCurrentUser } from "@/app/store/slices/authSlice";
+import {
+  logoutUser,
+  selectCurrentUser,
+  selectUserRole,
+} from "@/app/store/slices/authSlice";
 import { useI18n } from "@/app/i18n";
 import { LanguageSwitcher } from "./languageSwitcher";
 import { ThemeSwitcher } from "./themeSwitcher";
@@ -26,10 +30,14 @@ import { RiDashboardLine } from "react-icons/ri";
 const ProfileModal = ({
   isOpen,
   onClose,
+  onLogout,
 }: {
   isOpen: boolean;
   onClose: () => void;
+  onLogout: () => void;
 }) => {
+  const user = useAppSelector(selectCurrentUser);
+  const role = useAppSelector(selectUserRole);
   const { t } = useI18n();
   if (!isOpen) return null;
 
@@ -67,10 +75,12 @@ const ProfileModal = ({
               />
             </div>
 
-            <h2 className="mt-3 text-lg font-bold text-gray-800">Admin</h2>
+            <h2 className="mt-3 text-lg font-bold text-gray-800">
+              {user?.name || "Admin"}
+            </h2>
             <span className="inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[11px] font-semibold">
               <HiOutlineShieldCheck size={12} />
-              Super Admin
+              {role || "Admin"}
             </span>
 
             {/* Info rows */}
@@ -85,7 +95,7 @@ const ProfileModal = ({
                     {t.profile.username}
                   </p>
                   <p className="text-[13px] font-semibold text-gray-700">
-                    admin
+                    {user?.name || "admin"}
                   </p>
                 </div>
               </div>
@@ -100,7 +110,7 @@ const ProfileModal = ({
                     {t.profile.email}
                   </p>
                   <p className="text-[13px] font-semibold text-gray-700">
-                    admin@gmail.com
+                    {user?.identifier || "admin@gmail.com"}
                   </p>
                 </div>
               </div>
@@ -120,8 +130,9 @@ const ProfileModal = ({
               <button
                 onClick={() => {
                   onClose();
+                  onLogout();
                 }}
-                className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl border border-red-200 text-red-500 text-[13px] font-bold hover:bg-red-50 transition-colors"
+                className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl border border-red-200 text-red-500 text-[13px] font-bold hover:bg-red-50 transition-colors cursor-pointer"
               >
                 <HiOutlineLogout size={16} />
                 {t.profile.logout}
@@ -144,14 +155,19 @@ const ProfileDropdown = ({
   onViewProfile: () => void;
   onLogout: () => void;
 }) => {
+  const user = useAppSelector(selectCurrentUser);
   const { t } = useI18n();
   if (!isOpen) return null;
 
   return (
     <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-100 shadow-xl rounded-xl py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
       <div className="px-4 py-2 border-b border-gray-100 mb-1">
-        <p className="text-[12px] font-bold text-gray-700">admin</p>
-        <p className="text-[10px] text-gray-400">admin@gmail.com</p>
+        <p className="text-[12px] font-bold text-gray-700">
+          {user?.name || "Admin"}
+        </p>
+        <p className="text-[10px] text-gray-400">
+          {user?.identifier || "admin@gmail.com"}
+        </p>
       </div>
 
       <button
@@ -250,10 +266,11 @@ export const Headers = () => {
     setProfileModalOpen(true);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setProfileDropOpen(false);
-    dispatch(logout());
-    router.replace("/auth/login");
+    setProfileModalOpen(false);
+    await dispatch(logoutUser());
+    router.replace("/login");
   };
 
   return (
@@ -462,6 +479,7 @@ export const Headers = () => {
       <ProfileModal
         isOpen={profileModalOpen}
         onClose={() => setProfileModalOpen(false)}
+        onLogout={handleLogout}
       />
     </>
   );

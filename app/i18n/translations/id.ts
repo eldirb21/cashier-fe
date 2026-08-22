@@ -50,6 +50,16 @@ const id = {
     copyright: "© 2026 Eldir telp/wa: +62 813 1018 1765",
   },
 
+  // ── Dashboard ──────────────────────────────────────────────
+  dashboard: {
+    title: "Dashboard",
+    welcome: "Selamat datang kembali",
+    todaySales: "Penjualan Hari Ini",
+    totalTransactions: "Total Transaksi",
+    totalProducts: "Total Produk",
+    totalCustomers: "Total Pelanggan",
+  },
+
   // ── Language Switcher ───────────────────────────────────────
   language: {
     label: "Bahasa",
