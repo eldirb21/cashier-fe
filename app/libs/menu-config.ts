@@ -16,6 +16,9 @@ import {
   HiOutlineTicket,
   HiOutlineCreditCard,
   HiOutlineDocumentReport,
+  HiOutlineQrcode,
+  HiOutlineClipboardList,
+  HiOutlineUser,
 } from "react-icons/hi";
 
 export type MenuItem = {
@@ -45,6 +48,9 @@ export const ICONS = {
   ticket: HiOutlineTicket,
   creditCard: HiOutlineCreditCard,
   doc: HiOutlineDocumentReport,
+  qrcode: HiOutlineQrcode,
+  history: HiOutlineClipboardList,
+  user: HiOutlineUser,
 };
 
 const ALL_INTERNAL: RoleType[] = [
@@ -64,11 +70,39 @@ export const MENU_CONFIG: MenuItem[] = [
     roles: ALL_INTERNAL,
   },
   {
+    key: "product",
+    path: "/products",
+    icon: "cube",
+    section: "Customer Menu",
+    roles: [ROLE.CUSTOMER],
+  },
+  {
     key: "transactions",
     path: "/transactions",
     icon: "cart",
     section: "Main",
-    roles: ALL_INTERNAL,
+    roles: [...ALL_INTERNAL, ROLE.CUSTOMER],
+  },
+  {
+    key: "scan",
+    path: "/transactions#scan",
+    icon: "qrcode",
+    section: "Customer Menu",
+    roles: [ROLE.CUSTOMER],
+  },
+  {
+    key: "history",
+    path: "/transactions#history",
+    icon: "history",
+    section: "Customer Menu",
+    roles: [ROLE.CUSTOMER],
+  },
+  {
+    key: "profile",
+    path: "/profile",
+    icon: "user",
+    section: "Customer Menu",
+    roles: [ROLE.CUSTOMER],
   },
   {
     key: "master",

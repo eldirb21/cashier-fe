@@ -31,6 +31,10 @@ export async function middleware(req: NextRequest) {
     const role = payload.role as string;
 
     if (isPublicRoute) {
+      if (role === "CUSTOMER") {
+        console.log("→ customer logged in, redirect to /transactions");
+        return NextResponse.redirect(new URL("/transactions", req.url));
+      }
       if (!isRouteAllowed("/dashboard", role as any)) {
         console.log("→ logged in as role without dashboard access, redirect to /unauthorized");
         return NextResponse.redirect(new URL("/unauthorized", req.url));

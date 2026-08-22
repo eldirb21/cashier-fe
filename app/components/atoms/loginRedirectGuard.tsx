@@ -16,7 +16,11 @@ export function LoginRedirectGuard({
 
   useEffect(() => {
     if (user) {
-      router.replace("/dashboard");
+      if (user.role === "CUSTOMER") {
+        router.replace("/transactions");
+      } else {
+        router.replace("/dashboard");
+      }
     }
   }, [user, router]);
 

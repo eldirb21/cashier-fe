@@ -35,7 +35,9 @@ const en: Translations = {
     voidReturn: "VOID / RETURN",
     memberPoin: "MEMBER / POINTS",
     discountPromo: "DISCOUNT & PROMO",
-    paymentMethod: "PAYMENT METHOD",
+    scan: "SCAN",
+    history: "HISTORY",
+    profile: "PROFILE",
     users: "USERS",
   },
 

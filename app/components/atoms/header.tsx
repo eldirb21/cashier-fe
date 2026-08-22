@@ -1,13 +1,15 @@
 "use client";
 
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { useState, useRef, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/app/store/hooks";
 import {
   logoutUser,
   selectCurrentUser,
   selectUserRole,
 } from "@/app/store/slices/authSlice";
+import { ICONS } from "@/app/libs/menu-config";
+import { getMenuForRole } from "@/app/libs/permissions";
 import { useI18n } from "@/app/i18n";
 import { LanguageSwitcher } from "./languageSwitcher";
 import { ThemeSwitcher } from "./themeSwitcher";
@@ -216,47 +218,26 @@ export const Headers = () => {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  const role = useAppSelector(selectUserRole);
   const { t } = useI18n();
 
-  const menuItems = [
-    { name: t.nav.home, path: "/dashboard", icon: <HiOutlineHome size={20} /> },
-    {
-      name: t.nav.master,
-      icon: <HiOutlineCube size={20} />,
-      hasSub: true,
-      sub: [
-        { name: t.nav.categories, path: "/categories" },
-        { name: t.nav.product, path: "/products" },
-        { name: t.nav.supplier, path: "/supplier" },
-      ],
-    },
-    {
-      name: t.nav.customers,
-      path: "/customers",
-      icon: <HiOutlineUserGroup size={20} />,
-    },
-    {
-      name: t.nav.transactions,
-      path: "/transactions",
-      icon: <HiOutlineShoppingCart size={20} />,
-    },
-    {
-      name: t.nav.report,
-      icon: <HiOutlineCube size={20} />,
-      hasSub: true,
-      sub: [
-        { name: t.nav.profit, path: "/report/profit" },
-        { name: t.nav.sales, path: "/report/sales" },
-        { name: t.nav.shift, path: "/report/shift-Kasir" },
-        { name: t.nav.stockMutasi, path: "/report/stock-dan-mutasi" },
-        { name: t.nav.voidReturn, path: "/report/void-return" },
-        { name: t.nav.supplier, path: "/report/supplier" },
-        { name: t.nav.memberPoin, path: "/report/member-poin" },
-        { name: t.nav.discountPromo, path: "/report/discont-promo" },
-        { name: t.nav.paymentMethod, path: "/report/payment-report" },
-      ],
-    },
-  ];
+  const menuItems = useMemo(() => {
+    if (!role) return [];
+    return getMenuForRole(role).map((item) => ({
+      name: t.nav[item.key as keyof typeof t.nav] || item.key,
+      path: item.path,
+      icon: ICONS[item.icon] ? (
+        React.createElement(ICONS[item.icon], { size: 20 })
+      ) : (
+        <HiOutlineCube size={20} />
+      ),
+      hasSub: item.hasSub,
+      sub: item.sub?.map((s) => ({
+        name: t.nav[s.key as keyof typeof t.nav] || s.key,
+        path: s.path,
+      })),
+    }));
+  }, [role, t]);
 
   const toggleSub = (name: string) =>
     setOpenSub(openSub === name ? null : name);
@@ -340,13 +321,15 @@ export const Headers = () => {
                     </a>
                   ),
                 )}
-                <a
-                  href="/users"
-                  className="flex items-center gap-2 px-3 py-5 text-[11px] font-bold text-gray-500 hover:text-blue-600"
-                >
-                  <HiOutlineUsers size={20} />
-                  {t.nav.users}
-                </a>
+                {role && ["OWNER", "MANAGER", "ADMIN"].includes(role) && (
+                  <a
+                    href="/users"
+                    className="flex items-center gap-2 px-3 py-5 text-[11px] font-bold text-gray-500 hover:text-blue-600"
+                  >
+                    <HiOutlineUsers size={20} />
+                    {t.nav.users}
+                  </a>
+                )}
               </nav>
             </div>
 

@@ -97,7 +97,8 @@ export default function Sidebar() {
     return Array.from(map.entries());
   }, [filteredMenuItems]);
 
-  if (!role) return null;
+  // Role CUSTOMER tidak menampilkan sidebar
+  if (!role || role === "CUSTOMER" || rawMenuItems.length === 0) return null;
 
   return (
     <aside

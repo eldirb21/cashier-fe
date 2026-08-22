@@ -68,10 +68,15 @@ export default function Login() {
     setErrors({});
 
     try {
-      await dispatch(loginUser({ identifier, password })).unwrap();
-      console.log("LOGIN SUKSESSS");
+      const res = await dispatch(loginUser({ identifier, password })).unwrap();
+      console.log("LOGIN SUKSESSS", res);
 
-      router.replace("/dashboard");
+      const userRole = res?.role;
+      if (userRole === "CUSTOMER") {
+        router.replace("/transactions");
+      } else {
+        router.replace("/dashboard");
+      }
     } catch (err) {
       showAlert(
         `${typeof err === "object" && err !== null && "message" in err ? (err as { message: string }).message : err}`,

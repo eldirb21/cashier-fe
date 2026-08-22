@@ -35,7 +35,9 @@ const zh: Translations = {
     voidReturn: "作废 / 退货",
     memberPoin: "会员 / 积分",
     discountPromo: "折扣 & 促销",
-    paymentMethod: "付款方式",
+    scan: "扫码",
+    history: "历史记录",
+    profile: "个人资料",
     users: "用户",
   },
 

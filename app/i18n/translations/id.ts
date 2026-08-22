@@ -33,7 +33,9 @@ const id = {
     voidReturn: "VOID / RETUR",
     memberPoin: "MEMBER / POIN",
     discountPromo: "DISKON & PROMO",
-    paymentMethod: "METODE PEMBAYARAN",
+    scan: "SCAN",
+    history: "RIWAYAT",
+    profile: "PROFIL",
     users: "PENGGUNA",
   },
 
