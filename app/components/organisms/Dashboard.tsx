@@ -3,6 +3,8 @@
 import { useAppSelector } from "@/app/store/hooks";
 import { selectCurrentUser } from "@/app/store/slices/authSlice";
 import { useI18n } from "@/app/i18n";
+import { Headers } from "../atoms";
+import { HiOutlineBell, HiChat } from "react-icons/hi";
 
 export default function Dashboard() {
   const user = useAppSelector(selectCurrentUser);
@@ -11,7 +13,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
+      {/* <div>
         <h1 className="text-2xl font-bold text-brand-ink">
           {t.dashboard?.title ?? "Dashboard"}
         </h1>
@@ -19,7 +21,26 @@ export default function Dashboard() {
           {t.dashboard?.welcome ?? "Selamat datang kembali"}
           {user?.name ? `, ${user.name}` : ""}
         </p>
-      </div>
+      </div> */}
+      {/* ── TOP NAVBAR ── */}
+      <header className="bg-white border-b border-gray-100 px-6 py-3.5 flex items-center justify-between shadow-2xs">
+        {/* Brand Logo */}
+        <div className="flex items-center gap-1">
+          <span className="text-base font-black text-gray-900 tracking-tight">
+            {t.dashboard?.title ?? "Dashboard"}
+          </span>
+        </div>
+
+        {/* Right Info Badge & Profile */}
+        <div className="flex items-center gap-5 text-xs">
+          <button className="p-1.5 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-colors">
+            <HiChat size={18} />
+          </button>
+          <button className="p-1.5 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-colors">
+            <HiOutlineBell size={18} />
+          </button>
+        </div>
+      </header>
 
       {/* Summary cards — sesuaikan dengan data asli nanti */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

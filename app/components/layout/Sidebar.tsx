@@ -169,7 +169,7 @@ export default function Sidebar() {
         </div>
 
         {/* Search Bar */}
-        <div className="px-3 pb-2">
+        {/* <div className="px-3 pb-2">
           {isCollapsed ? (
             <button
               onClick={() => setIsCollapsed(false)}
@@ -205,7 +205,7 @@ export default function Sidebar() {
               />
             </div>
           )}
-        </div>
+        </div> */}
       </div>
 
       {/* ── MIDDLE: NAVIGATION MENU (SCROLLABLE) ── */}
@@ -279,10 +279,16 @@ export default function Sidebar() {
                   borderColor: "var(--border)",
                 }}
               />
-              <p className="text-xs font-bold" style={{ color: "var(--sidebar-tooltip-fg)" }}>
+              <p
+                className="text-xs font-bold"
+                style={{ color: "var(--sidebar-tooltip-fg)" }}
+              >
                 {user?.name || "User"}
               </p>
-              <p className="text-[10px] opacity-80" style={{ color: "var(--sidebar-tooltip-fg)" }}>
+              <p
+                className="text-[10px] opacity-80"
+                style={{ color: "var(--sidebar-tooltip-fg)" }}
+              >
                 {user?.identifier || ""}
               </p>
               <button
