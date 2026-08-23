@@ -319,7 +319,6 @@ export function OrderItem() {
         onClose={() => setOpen(false)}
         order={order}
         onPay={(result) => {
-          console.log("Payment result:", result);
           setOpen(false);
         }}
         onPrint={() => setOpenReceipt(true)}

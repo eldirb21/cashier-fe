@@ -1,14 +1,10 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { authService, User, LoginPayload } from "@/app/services/auth.service";
+import { tokenStorage } from "@/app/libs/token";
 import { RoleType } from "@/app/libs/roles";
-import { axiosInstance, setCookie, removeCookie, getCookie } from "@/app/libs";
-import axios from "axios";
+import type { RootState } from "@/app/store";
 
-export type User = {
-  id: string;
-  name: string;
-  identifier: string;
-  role: RoleType;
-};
+export type { User };
 
 type AuthState = {
   user: User | null;
@@ -26,37 +22,10 @@ const initialState: AuthState = {
 
 export const loginUser = createAsyncThunk(
   "auth/login",
-  async (
-    payload: { identifier: string; password: string },
-    { rejectWithValue },
-  ) => {
+  async (payload: LoginPayload, { rejectWithValue }) => {
     try {
-      const res = await axiosInstance.post("/auth/login", payload);
-      const data = res.data?.data;
-      if (!data) throw new Error("Data login tidak ditemukan");
-
-      const { accessToken, refreshToken, user } = data;
-
-      if (accessToken) {
-        if (typeof window !== "undefined") {
-          localStorage.setItem("token", accessToken);
-        }
-        setCookie("token", accessToken);
-      }
-
-      if (refreshToken) {
-        setCookie("refreshToken", refreshToken);
-      }
-
-      return user as User;
+      return await authService.login(payload);
     } catch (err: any) {
-      if (axios.isAxiosError(err)) {
-        const message =
-          err.response?.data?.message ||
-          err.message ||
-          "Login gagal. Periksa email dan password Anda.";
-        return rejectWithValue(message);
-      }
       return rejectWithValue(
         err instanceof Error
           ? err.message
@@ -66,35 +35,24 @@ export const loginUser = createAsyncThunk(
   },
 );
 
-// dipanggil saat app pertama load (root layout) untuk rehydrate Redux
+// Dipanggil saat app pertama load untuk rehydrate Redux store
 export const fetchCurrentUser = createAsyncThunk(
   "auth/fetchCurrentUser",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axiosInstance.get("/auth/me");
-      return res.data?.data?.user as User;
-    } catch (err) {
-      return rejectWithValue(err);
+      return await authService.getCurrentUser();
+    } catch (err: any) {
+      return rejectWithValue(
+        err instanceof Error
+          ? err.message
+          : "Sesi tidak ditemukan atau kedaluwarsa",
+      );
     }
   },
 );
 
 export const logoutUser = createAsyncThunk("auth/logout", async () => {
-  try {
-    const refreshToken =
-      typeof document !== "undefined" ? getCookie("refreshToken") : null;
-    if (refreshToken) {
-      await axiosInstance.post("/auth/logout", { refreshToken });
-    }
-  } catch (err) {
-    console.error("Logout error:", err);
-  } finally {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("token");
-    }
-    removeCookie("token");
-    removeCookie("refreshToken");
-  }
+  await authService.logout();
 });
 
 const authSlice = createSlice({
@@ -104,11 +62,7 @@ const authSlice = createSlice({
     logout: (state) => {
       state.user = null;
       state.error = null;
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("token");
-      }
-      removeCookie("token");
-      removeCookie("refreshToken");
+      tokenStorage.clear();
     },
     clearError: (state) => {
       state.error = null;
@@ -116,6 +70,7 @@ const authSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // Login
       .addCase(loginUser.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -128,6 +83,7 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = (action.payload as string) ?? "Terjadi kesalahan";
       })
+      // Fetch Current User
       .addCase(fetchCurrentUser.fulfilled, (state, action) => {
         state.user = action.payload;
         state.isInitialized = true;
@@ -136,19 +92,22 @@ const authSlice = createSlice({
         state.user = null;
         state.isInitialized = true;
       })
+      // Logout
       .addCase(logoutUser.fulfilled, (state) => {
         state.user = null;
+        state.error = null;
       });
   },
 });
 
 export const { logout, clearError } = authSlice.actions;
 
-export const selectIsAuthLoading = (state: any) => state.auth.isLoading;
-export const selectCurrentUser = (state: any) => state.auth.user;
-export const selectUserRole = (state: any): RoleType | undefined =>
+export const selectIsAuthLoading = (state: RootState) => state.auth.isLoading;
+export const selectCurrentUser = (state: RootState) => state.auth.user;
+export const selectUserRole = (state: RootState): RoleType | undefined =>
   state.auth.user?.role;
-export const selectIsInitialized = (state: any) => state.auth.isInitialized;
-export const selectAuthError = (state: any) => state.auth.error;
+export const selectIsInitialized = (state: RootState) =>
+  state.auth.isInitialized;
+export const selectAuthError = (state: RootState) => state.auth.error;
 
 export default authSlice.reducer;

@@ -27,7 +27,7 @@ export default function Login() {
 
   const [form, setForm] = useState({
     identifier: "admin@cashier.com",
-    password: "admin1234",
+    password: "admin123",
   });
   const [errors, setErrors] = useState<FormError>({});
   const [showPassword, setShowPassword] = useState(false);
@@ -69,7 +69,6 @@ export default function Login() {
 
     try {
       const res = await dispatch(loginUser({ identifier, password })).unwrap();
-      console.log("LOGIN SUKSESSS", res);
 
       const userRole = res?.role;
       if (userRole === "CUSTOMER") {

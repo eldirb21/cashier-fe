@@ -28,7 +28,6 @@ export function ReceiptComponent() {
 
   const handlePrint = async () => {
     const commands = await render(receipt);
-    console.log(commands); // Here you would instead send commands to your backend
   };
 
   return (

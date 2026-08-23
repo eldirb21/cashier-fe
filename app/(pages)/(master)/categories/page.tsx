@@ -21,9 +21,6 @@ const Categories = () => {
       title: "Hapus Produk?",
       message: "Data ini akan hilang dari stok dan laporan.",
       onSave: () => {
-        // Langkah 2: Proses hapus (API call)
-        console.log("Menghapus id:", id);
-
         // Langkah 3: Beri tahu sukses
         showAlert("Produk berhasil dihapus!", "success");
       },

@@ -11,3 +11,4 @@ export * from "./data";
 export * from "./roles";
 export * from "./menu-config";
 export * from "./permissions";
+export * from "./token";

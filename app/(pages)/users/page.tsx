@@ -22,9 +22,6 @@ const UsersPage = () => {
       title: "Hapus User?",
       message: "Data ini akan hilang dari data karyawan.",
       onSave: () => {
-        // Langkah 2: Proses hapus (API call)
-        console.log("Menghapus id:", id);
-
         // Langkah 3: Beri tahu sukses
         showAlert("User berhasil dihapus!", "success");
       },
