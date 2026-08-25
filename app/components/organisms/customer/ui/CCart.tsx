@@ -29,18 +29,8 @@ export const CCart = ({
         <div>
           {/* Header */}
           <h2 className="text-base font-bold text-gray-900 mb-4">
-            Current sale
+            Keranjangmu
           </h2>
-
-          {/* Customer Row */}
-          <div className="bg-gray-50 rounded-xl px-4 py-3 flex justify-between items-center mb-5 border border-gray-100">
-            <span className="text-xs font-semibold text-gray-700">
-              Walk-in customer
-            </span>
-            <button className="text-xs font-bold text-gray-900 hover:text-[#065f46] transition-colors">
-              + Add customer
-            </button>
-          </div>
 
           {/* Order Items List */}
           <div className="space-y-4 max-h-[260px] overflow-y-auto pr-1">
