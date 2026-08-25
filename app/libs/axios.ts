@@ -1,5 +1,6 @@
 import axios, { AxiosError } from "axios";
 import { tokenStorage } from "./token";
+import { getOrCreateSessionId } from "./cartSession";
 
 const axiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -13,6 +14,9 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = tokenStorage.get();
+    if (config.url?.includes("/cart")) {
+      config.headers["X-Cart-Session-Id"] = getOrCreateSessionId();
+    }
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

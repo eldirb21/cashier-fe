@@ -16,6 +16,13 @@ import { getCategoryProduct } from "@/app/store/slices/categorySlice";
 import { configList, fetchConfig } from "@/app/store/slices/configSlice";
 import { useBarcodeScanner } from "@/app/hooks";
 import { Product } from "@/app/libs";
+import {
+  addCartItem,
+  cartList,
+  getCart,
+  removeCartItem,
+  updateCartItem,
+} from "@/app/store/slices/cartSlice";
 
 type ProductProps = {
   id: number;
@@ -39,8 +46,8 @@ const formatRupiah = (amount: string | number): string => {
 export const CProductList = () => {
   const dispatch = useAppDispatch();
   const products = useAppSelector(productList);
+  const cart = useAppSelector(cartList);
   const { categories: tabCategories } = useAppSelector(configList);
-
   const [isScanning, setIsScanning] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"Cash" | "Card" | "QRIS">(
     "Cash",
@@ -52,7 +59,7 @@ export const CProductList = () => {
   const [categoryId, setCategoryId] = useState("all");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  const [cart, setCart] = useState<CartItem[]>([]);
+  // const [cart, setCart] = useState<CartItem[]>([]);
 
   useBarcodeScanner({
     isScanning,
@@ -61,6 +68,10 @@ export const CProductList = () => {
       setIsScanning(false);
     },
   });
+
+  useEffect(() => {
+    dispatch(getCart());
+  }, [dispatch]);
 
   useEffect(() => {
     if (search.length > 0 && search.length < 3) return;
@@ -91,20 +102,9 @@ export const CProductList = () => {
   }, [dispatch]);
 
   const addToCart = (product: Product) => {
-    console.log(product);
-
-    // setCart((prev) => {
-    //   const existingIndex = prev.findIndex(
-    //     (item) => item.product.id === product.id,
-    //   );
-    //   if (existingIndex > -1) {
-    //     const updated = [...prev];
-    //     updated[existingIndex].qty += 1;
-    //     return updated;
-    //   }
-    //   return [...prev, { product, qty: 1 }];
-    // });
+    dispatch(addCartItem({ product_id: product.id, qty: 1 }));
   };
+
   const fetchSearch = (search: string) => {
     setSearch(search);
     setPage(1);
@@ -114,25 +114,17 @@ export const CProductList = () => {
     setPage(1);
   };
 
-  const updateQty = (productId: number, delta: number) => {
-    setCart(
-      (prev) =>
-        prev
-          .map((item) => {
-            if (item.product.id === productId) {
-              const newQty = item.qty + delta;
-              return newQty > 0 ? { ...item, qty: newQty } : null;
-            }
-            return item;
-          })
-          .filter(Boolean) as CartItem[],
-    );
+  const updateQty = (itemId: number, currentQty: number, delta: number) => {
+    const newQty = currentQty + delta;
+    if (newQty <= 0) {
+      dispatch(removeCartItem(itemId));
+    } else {
+      dispatch(updateCartItem({ id: itemId, qty: newQty }));
+    }
   };
 
-  const subtotal = cart.reduce(
-    (sum, item) => sum + item.product.price * item.qty,
-    0,
-  );
+  const subtotal = cart.reduce((sum, item) => sum + item.subtotal, 0);
+
   const tax = 0;
   const total = Math.max(0, subtotal - discountAmount + tax);
 
@@ -324,13 +316,13 @@ export const CProductList = () => {
                         </span>
                         <div className="hidden group-hover:flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
                           <button
-                            onClick={() => updateQty(item.product.id, -1)}
+                            onClick={() => updateQty(item.id, item.qty, -1)}
                             className="p-1 hover:text-red-600"
                           >
                             <HiMinus size={12} />
                           </button>
                           <button
-                            onClick={() => updateQty(item.product.id, 1)}
+                            onClick={() => updateQty(item.id, item.qty, 1)}
                             className="p-1 hover:text-emerald-700"
                           >
                             <HiPlus size={12} />
