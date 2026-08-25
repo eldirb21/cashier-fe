@@ -10,14 +10,9 @@ import {
 } from "@/app/store/slices/authSlice";
 import { ICONS } from "@/app/libs/menu-config";
 import { getMenuForRole } from "@/app/libs/permissions";
-import { useI18n } from "@/app/i18n";
-import { LanguageSwitcher } from "./languageSwitcher";
-import { ThemeSwitcher } from "./themeSwitcher";
+import { useI18n } from "@/app/i18n"; 
 import {
-  HiOutlineHome,
   HiOutlineCube,
-  HiOutlineUserGroup,
-  HiOutlineShoppingCart,
   HiOutlineUsers,
   HiOutlineMenu,
   HiOutlineX,
@@ -28,6 +23,7 @@ import {
   HiOutlineShieldCheck,
 } from "react-icons/hi";
 import { RiDashboardLine } from "react-icons/ri";
+import { LanguageSwitcher, ThemeSwitcher } from "../../atoms";
 
 const ProfileModal = ({
   isOpen,
@@ -192,7 +188,7 @@ const ProfileDropdown = ({
 };
 
 // ── Main Header ────────────────────────────────────────────────
-export const Headers = () => {
+export const CHeader = () => {
   const pathname = usePathname();
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectCurrentUser);
@@ -266,7 +262,7 @@ export const Headers = () => {
                   <RiDashboardLine size={24} />
                 </div>
                 <span className="font-bold text-[#334155] text-sm tracking-wide hidden sm:block">
-                  TOKODA
+                  CASHIER
                 </span>
               </div>
 

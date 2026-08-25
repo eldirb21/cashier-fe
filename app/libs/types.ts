@@ -3,6 +3,22 @@ export type OrderStatus = "open" | "paid" | "voided";
 export type DiscountType = "percentage" | "fixed";
 export type MovementType = "purchase" | "sale" | "adjustment" | "void";
 
+export interface PaginationRequest {
+  page?: number;
+  size?: number;
+  search?: string;
+  category_id?: string;
+  sort_by?: string;
+  sort_order?: "asc" | "desc";
+}
+export interface PaginationResponse {
+  page: number;
+  size: number;
+  total: number;
+  total_pages: number;
+  has_next: boolean;
+  has_previous: boolean;
+}
 
 export interface User {
   id: number;
@@ -40,13 +56,52 @@ export interface Category {
   id: string;
   name: string;
   description: string;
-  img: string;
+  slug: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateCategory {
+  name: string;
+  description: string;
+  slug: string;
+  is_active: boolean;
 }
 
 export interface Supplier {
   id: string;
   name: string;
+  code: string;
+  contact_person: string;
   phone: string;
+  email: string;
+  address: string;
+  city: string;
+  province: string;
+  bank_name: string;
+  bank_account_number: string;
+  bank_account_name: string;
+  notes: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateSupplier {
+  name: string;
+  code: string;
+  contact_person: string;
+  phone: string;
+  email: string;
+  address: string;
+  city: string;
+  province: string;
+  bank_name: string;
+  bank_account_number: string;
+  bank_account_name: string;
+  notes: string;
+  is_active: boolean;
 }
 
 export interface Product {
@@ -59,7 +114,26 @@ export interface Product {
   cost_price: number;
   stock: number;
   min_stock: number;
+  img_url: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
+export interface ProductListResponse {
+  data: Product[];
+  pagination: PaginationResponse;
+}
+
+export interface CreateProduct {
+  category_id: string;
+  supplier_id: string;
+  name: string;
+  barcode: string;
+  price: number;
+  cost_price: number;
+  stock: number;
+  min_stock: number;
   img_url: string;
   is_active: boolean;
 }

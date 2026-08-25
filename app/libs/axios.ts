@@ -33,6 +33,11 @@ axiosInstance.interceptors.response.use(
       error.message ||
       "Terjadi kesalahan saat memproses permintaan";
 
+    if (message === "Access token kedaluwarsa") {
+      tokenStorage.clear();
+      window.location.href = "/login";
+    }
+
     return Promise.reject(new Error(message));
   },
 );

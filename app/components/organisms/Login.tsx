@@ -72,7 +72,7 @@ export default function Login() {
 
       const userRole = res?.role;
       if (userRole === "CUSTOMER") {
-        router.replace("/transactions");
+        router.replace("/cproduct");
       } else {
         router.replace("/dashboard");
       }

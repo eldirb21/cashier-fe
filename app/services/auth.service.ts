@@ -27,11 +27,11 @@ export const authService = {
    * Login user dan simpan access token & refresh token
    */
   async login(payload: LoginPayload): Promise<User> {
-    const res = await axiosInstance.post<{ data: LoginResponseData }>(
+    const res = await axiosInstance.post<LoginResponseData>(
       "/auth/login",
       payload,
     );
-    const data = res.data?.data;
+    const data = res.data;
 
     if (!data || !data.user) {
       throw new Error("Data login tidak ditemukan");
