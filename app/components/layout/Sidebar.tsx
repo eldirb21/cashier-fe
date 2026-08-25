@@ -156,7 +156,7 @@ export default function Sidebar() {
                 className="font-extrabold text-base tracking-tight truncate flex items-center gap-1.5"
                 style={{ color: "var(--header-fg)" }}
               >
-                <span>MY STORE</span>
+                <span>BERAKU</span>
               </h1>
               <p
                 className="text-[10px] font-medium tracking-wide uppercase truncate opacity-80"
@@ -167,45 +167,6 @@ export default function Sidebar() {
             </div>
           )}
         </div>
-
-        {/* Search Bar */}
-        {/* <div className="px-3 pb-2">
-          {isCollapsed ? (
-            <button
-              onClick={() => setIsCollapsed(false)}
-              className="w-11 h-10 mx-auto flex items-center justify-center rounded-xl transition-colors cursor-pointer border opacity-80 hover:opacity-100"
-              style={{
-                background: "var(--bg-subtle)",
-                borderColor: "var(--border)",
-                color: "var(--header-nav)",
-              }}
-              title="Search"
-            >
-              <HiOutlineSearch size={18} />
-            </button>
-          ) : (
-            <div className="relative">
-              <div
-                className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
-                style={{ color: "var(--header-nav)" }}
-              >
-                <HiOutlineSearch size={16} />
-              </div>
-              <input
-                type="text"
-                placeholder="Search for anything..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 border rounded-xl text-xs focus:outline-none transition-all shadow-sm"
-                style={{
-                  background: "var(--bg-subtle)",
-                  borderColor: "var(--border)",
-                  color: "var(--fg)",
-                }}
-              />
-            </div>
-          )}
-        </div> */}
       </div>
 
       {/* ── MIDDLE: NAVIGATION MENU (SCROLLABLE) ── */}

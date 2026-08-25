@@ -234,32 +234,6 @@ const Transactions = () => {
     <div className="min-h-screen bg-[#f8fafc] text-gray-800 flex flex-col font-sans">
       <Headers />
 
-      {/* ── TOP NAVBAR ── */}
-      <header className="bg-white border-b border-gray-100 px-6 py-3.5 flex items-center justify-between shadow-2xs">
-        {/* Brand Logo */}
-        <div className="flex items-center gap-1">
-          <span className="text-xl font-black text-gray-900 tracking-tight">
-            kasir<span className="text-[#065f46]">pro</span>
-          </span>
-        </div>
-
-        {/* Right Info Badge & Profile */}
-        <div className="flex items-center gap-5 text-xs">
-          <span className="text-gray-500 font-medium hidden sm:inline">
-            Central Store
-          </span>
-          <div className="flex items-center gap-2 bg-emerald-50 text-gray-700 px-3 py-1.5 rounded-full border border-emerald-100">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="font-semibold text-gray-800">
-              Shift open · Rina
-            </span>
-          </div>
-          <button className="p-1.5 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-colors">
-            <HiOutlineBell size={18} />
-          </button>
-        </div>
-      </header>
-
       {/* ── MAIN CONTENT AREA ── */}
       <div className="flex-1 p-4 md:p-6 lg:p-7 max-w-[1600px] w-full mx-auto flex flex-col lg:flex-row gap-6">
         {/* ── LEFT SIDE: PRODUCTS & FILTERS ── */}

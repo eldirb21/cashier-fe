@@ -25,7 +25,7 @@ const Products = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
+    <div className="min-h-screen">
       <Headers />
 
       <main className="max-w-350 mx-auto p-4 md:p-6 lg:p-8">
