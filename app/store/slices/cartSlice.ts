@@ -12,7 +12,7 @@ type CartProduct = {
   stock: number;
 };
 
-type CartItemType = {
+export type CartItemType = {
   id: number;
   product: CartProduct;
   qty: number;
@@ -55,7 +55,7 @@ export const getCart = createAsyncThunk(
 export const addCartItem = createAsyncThunk(
   "cart/addCartItem",
   async (
-    { product_id, qty = 1 }: { product_id: number; qty?: number },
+    { product_id, qty = 1 }: { product_id: string; qty?: number },
     { rejectWithValue },
   ) => {
     try {
