@@ -10,19 +10,17 @@ import {
 } from "@/app/store/slices/authSlice";
 import { ICONS } from "@/app/libs/menu-config";
 import { getMenuForRole } from "@/app/libs/permissions";
-import { useI18n } from "@/app/i18n"; 
+import { useI18n } from "@/app/i18n";
 import {
   HiOutlineCube,
-  HiOutlineUsers,
   HiOutlineMenu,
   HiOutlineX,
-  HiChevronDown,
   HiOutlineLogout,
   HiOutlineUser,
   HiOutlineMail,
   HiOutlineShieldCheck,
 } from "react-icons/hi";
-import { RiDashboardLine } from "react-icons/ri";
+import Image from "next/image";
 import { LanguageSwitcher, ThemeSwitcher } from "../../atoms";
 
 const ProfileModal = ({
@@ -74,11 +72,11 @@ const ProfileModal = ({
             </div>
 
             <h2 className="mt-3 text-lg font-bold text-gray-800">
-              {user?.name || "Admin"}
+              {user?.name}
             </h2>
-            <span className="inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[11px] font-semibold">
+            <span className="inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 rounded-full bg-blue-50 text-gray-800  text-[11px] font-semibold">
               <HiOutlineShieldCheck size={12} />
-              {role || "Admin"}
+              {role}
             </span>
 
             {/* Info rows */}
@@ -93,7 +91,7 @@ const ProfileModal = ({
                     {t.profile.username}
                   </p>
                   <p className="text-[13px] font-semibold text-gray-700">
-                    {user?.name || "admin"}
+                    {user?.name}
                   </p>
                 </div>
               </div>
@@ -163,7 +161,7 @@ const ProfileDropdown = ({
         <p className="text-[12px] font-bold text-gray-700">
           {user?.name || "Admin"}
         </p>
-        <p className="text-[10px] text-gray-400">
+        <p className="text-[10px] text-gray-700">
           {user?.identifier || "admin@gmail.com"}
         </p>
       </div>
@@ -175,6 +173,8 @@ const ProfileDropdown = ({
         <HiOutlineUser size={15} />
         {t.profile.viewProfile}
       </button>
+      <LanguageSwitcher />
+      <ThemeSwitcher />
 
       <button
         onClick={onLogout}
@@ -187,7 +187,6 @@ const ProfileDropdown = ({
   );
 };
 
-// ── Main Header ────────────────────────────────────────────────
 export const CHeader = () => {
   const pathname = usePathname();
   const dispatch = useAppDispatch();
@@ -195,12 +194,10 @@ export const CHeader = () => {
   const router = useRouter();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [openSub, setOpenSub] = useState<string | null>(null);
   const [profileDropOpen, setProfileDropOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (
@@ -235,9 +232,6 @@ export const CHeader = () => {
     }));
   }, [role, t]);
 
-  const toggleSub = (name: string) =>
-    setOpenSub(openSub === name ? null : name);
-
   const handleViewProfile = () => {
     setProfileDropOpen(false);
     setProfileModalOpen(true);
@@ -258,52 +252,14 @@ export const CHeader = () => {
             {/* LEFT: Logo + Desktop Nav */}
             <div className="flex items-center gap-8">
               <div className="flex items-center gap-2">
-                <div className="bg-[#3b82f6] p-1.5 rounded text-white">
-                  <RiDashboardLine size={24} />
-                </div>
                 <span className="font-bold text-[#334155] text-sm tracking-wide hidden sm:block">
-                  CASHIER
+                  BERAKU
                 </span>
               </div>
 
               <nav className="hidden lg:flex items-center space-x-1">
-                {menuItems.map((item) =>
-                  item.hasSub ? (
-                    <div key={item.name} className="relative group">
-                      <button
-                        onClick={() => toggleSub(item.name)}
-                        className={`flex items-center gap-1 px-3 py-5 text-[11px] font-bold transition-all ${
-                          item.sub?.some((sub) => sub.path === pathname)
-                            ? "text-blue-600 border-b-2 border-blue-600"
-                            : "text-gray-500 hover:text-blue-600"
-                        }`}
-                      >
-                        {item.icon}
-                        {item.name}
-                        <HiChevronDown
-                          size={14}
-                          className={`transition-transform ${openSub === item.name ? "rotate-180" : ""}`}
-                        />
-                      </button>
-                      {openSub === item.name && (
-                        <div className="absolute top-full left-0 w-48 bg-white border border-gray-100 shadow-xl rounded-b-md py-2 animate-in fade-in slide-in-from-top-2">
-                          {item.sub?.map((sub) => (
-                            <a
-                              key={sub.name}
-                              href={sub.path}
-                              className={`flex items-center gap-1 px-4 py-2 text-[11px] font-bold transition-all ${
-                                sub.path === pathname
-                                  ? "text-blue-600"
-                                  : "text-gray-500 hover:text-blue-600"
-                              }`}
-                            >
-                              {sub.name}
-                            </a>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
+                {menuItems.map((item, i) => (
+                  <div key={i} className="relative group">
                     <a
                       key={item.name}
                       href={item.path}
@@ -313,49 +269,41 @@ export const CHeader = () => {
                           : "text-gray-500 hover:text-blue-600"
                       }`}
                     >
-                      {item.icon} {item.name}
+                      {item.name}
                     </a>
-                  ),
-                )}
-                {role && ["OWNER", "MANAGER", "ADMIN"].includes(role) && (
-                  <a
-                    href="/users"
-                    className="flex items-center gap-2 px-3 py-5 text-[11px] font-bold text-gray-500 hover:text-blue-600"
-                  >
-                    <HiOutlineUsers size={20} />
-                    {t.nav.users}
-                  </a>
-                )}
+                  </div>
+                ))}
               </nav>
             </div>
 
             {/* RIGHT: Theme + Language + Profile */}
             <div className="flex items-center gap-2 sm:gap-3">
-              <ThemeSwitcher />
-              <LanguageSwitcher />
+              <div className="flex lg:hidden gap-2">
+                <LanguageSwitcher />
+                <ThemeSwitcher />
+              </div>
 
-              {/* Profile Section — now clickable with dropdown */}
               <div
                 ref={profileRef}
-                className="relative flex items-center gap-3 pl-4 border-l border-gray-200"
+                className="relative flex items-center gap-3 pl-4"
               >
                 <div className="hidden md:block text-right">
-                  <p className="text-[12px] font-bold text-gray-700 leading-none mb-1">
-                    {user?.name || user?.username || "admin"}
+                  <p className="text-[12px] font-bold leading-none mb-1">
+                    {user?.name}
                   </p>
-                  <p className="text-[10px] text-gray-400">
-                    {user?.email || "admin@gmail.com"}
-                  </p>
+                  <p className="text-[10px]">{user?.email}</p>
                 </div>
 
                 <button
                   onClick={() => setProfileDropOpen((v) => !v)}
-                  className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden border-2 border-blue-200 hover:border-blue-400 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  className="hidden lg:flex w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden border-2 border-blue-200 hover:border-blue-400 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400"
                 >
-                  <img
+                  <Image
                     src="https://api.dicebear.com/7.x/avataaars/svg?seed=admin"
                     alt="avatar"
-                    className="w-full h-full object-cover"
+                    height={60}
+                    width={60}
+                    className="object-cover"
                   />
                 </button>
 
@@ -384,54 +332,19 @@ export const CHeader = () => {
         {isOpen && (
           <div className="lg:hidden bg-white border-t border-gray-100 shadow-xl overflow-y-auto max-h-screen">
             <div className="px-4 py-4 space-y-1">
-              {menuItems.map((item) =>
-                item.hasSub ? (
-                  <div key={item.name}>
-                    <button
-                      onClick={() => toggleSub(item.name)}
-                      className={`flex items-center gap-3 px-4 py-3 text-xs font-bold rounded-lg w-full justify-between ${
-                        item.sub?.some((sub) => sub.path === pathname)
-                          ? "text-blue-600"
-                          : "text-gray-500 hover:text-blue-600"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        {item.icon}
-                        {item.name}
-                      </div>
-                      <HiChevronDown
-                        className={`transition-transform ${openSub === item.name ? "rotate-180" : ""}`}
-                      />
-                    </button>
-                    {openSub === item.name &&
-                      item.sub?.map((sub) => (
-                        <a
-                          key={sub.name}
-                          href={sub.path}
-                          className={`block pl-11 py-2 text-xs font-semibold ${
-                            sub.path === pathname
-                              ? "text-blue-600"
-                              : "text-gray-500 hover:text-blue-600"
-                          }`}
-                        >
-                          {sub.name}
-                        </a>
-                      ))}
-                  </div>
-                ) : (
-                  <a
-                    key={item.name}
-                    href={item.path}
-                    className={`flex items-center gap-3 px-4 py-3 text-xs font-bold rounded-lg ${
-                      item.path === pathname
-                        ? "text-blue-600"
-                        : "text-gray-500 hover:text-blue-600"
-                    }`}
-                  >
-                    {item.icon} {item.name}
-                  </a>
-                ),
-              )}
+              {menuItems.map((item) => (
+                <a
+                  key={item.name}
+                  href={item.path}
+                  className={`flex items-center gap-3 px-4 py-3 text-xs font-bold rounded-lg ${
+                    item.path === pathname
+                      ? "text-blue-600"
+                      : "text-gray-500 hover:text-blue-600"
+                  }`}
+                >
+                  {item.name}
+                </a>
+              ))}
 
               {/* Mobile profile actions */}
               <div className="border-t border-gray-100 pt-3 mt-2 space-y-1">

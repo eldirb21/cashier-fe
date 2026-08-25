@@ -40,7 +40,8 @@ export const fetchCurrentUser = createAsyncThunk(
   "auth/fetchCurrentUser",
   async (_, { rejectWithValue }) => {
     try {
-      return await authService.getCurrentUser();
+      const result = await authService.getCurrentUser();
+      return result;
     } catch (err: any) {
       return rejectWithValue(
         err instanceof Error

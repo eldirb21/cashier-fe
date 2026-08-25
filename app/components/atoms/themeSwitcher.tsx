@@ -54,22 +54,19 @@ export function ThemeSwitcher() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+  console.log(theme);
 
   return (
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
         title="Switch theme"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white/80 hover:bg-white hover:border-gray-300 text-[12px] font-semibold text-gray-600 hover:text-gray-800 transition-all duration-200 shadow-sm"
-        style={{
-          background: "var(--bg-card)",
-          borderColor: "var(--border)",
-          color: "var(--fg-muted)",
-        }}
+        className="flex items-center justify-between gap-2 w-full capitalize px-4 py-2 text-[12px] font-semibold text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
       >
-        <span className="text-base leading-none">{current.icon}</span>
+        <div className="flex items-center gap-2">
+          <span>{current.icon}</span>
+          {theme}
+        </div>
         <svg
           className={`w-3 h-3 text-gray-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
           fill="none"

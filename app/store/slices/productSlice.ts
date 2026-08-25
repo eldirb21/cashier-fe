@@ -7,8 +7,6 @@ export const getProduct = createAsyncThunk(
   "product/getProduct",
   async (params?: PaginationRequest) => {
     const response = await productService.getAll(params);
-    console.log(response);
-
     return response;
   },
 );

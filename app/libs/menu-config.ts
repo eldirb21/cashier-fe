@@ -102,7 +102,7 @@ export const MENU_CONFIG: MenuItem[] = [
     path: "/profile",
     icon: "user",
     section: "Customer Menu",
-    roles: [ROLE.CUSTOMER],
+    roles: [],
   },
   {
     key: "master",

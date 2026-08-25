@@ -59,12 +59,14 @@ export function LanguageSwitcher({ variant = "dropdown" }: Props) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white/80 hover:bg-white hover:border-brand-primary/40 text-[12px] font-semibold text-gray-600 hover:text-brand-primary transition-all duration-200 shadow-sm"
+        className="flex items-center justify-between gap-2 w-full capitalize px-4 py-2 text-[12px] font-semibold text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors"
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <span className="text-base leading-none">{FLAGS[locale]}</span>
-        <span>{locale.toUpperCase()}</span>
+        <div className="flex items-center capitalize gap-2">
+          <span>{FLAGS[locale]}</span>
+          {locale.toUpperCase()}
+        </div>
         <svg
           className={`w-3 h-3 text-gray-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
           fill="none"

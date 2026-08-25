@@ -47,8 +47,12 @@ export const authService = {
    * Mengambil data user yang sedang aktif
    */
   async getCurrentUser(): Promise<User> {
-    const res = await axiosInstance.get<{ data: { user: User } }>("/auth/me");
-    const user = res.data?.data?.user;
+    const res = await axiosInstance.get<{
+      user: User;
+      success: boolean;
+      message: string;
+    }>("/auth/me");
+    const user = res.data?.user;
 
     if (!user) {
       throw new Error("Data pengguna tidak valid");
