@@ -2,6 +2,6 @@
 
 import { CategoriesForm } from "@/app/components/molecules";
 
-export default function NewCategories() {
+export default function NewCategoryPage() {
   return <CategoriesForm />;
 }

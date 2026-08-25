@@ -9,10 +9,10 @@ export default function CategoriesLayout({
 }) {
   return (
     <section>
-      {/* Menampilkan isi dari page.tsx (Tabel Produk) */}
+      {/* Menampilkan isi dari page.tsx (Tabel Kategori) */}
       {children}
-      
-      {/* Slot untuk menampilkan isi dari folder @modal */}
+
+      {/* Slot untuk modal intersep (new / edit kategori) */}
       {modal}
     </section>
   );

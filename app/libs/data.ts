@@ -16,26 +16,34 @@ export const categories: Category[] = [
   {
     id: "1",
     name: "Makanan Ringan",
-    description: "Makanan Ringan",
+    slug: "makanan-ringan",
+    description: "Aneka makanan ringan dan camilan gurih/manis",
     img: "https://cdn-icons-png.flaticon.com/512/2553/2553642.png",
+    is_active: true,
   },
   {
     id: "2",
     name: "Mie Cup",
-    description: "Mie Cup",
+    slug: "mie-cup",
+    description: "Mie instan dalam kemasan cup praktis",
     img: "https://cdn-icons-png.flaticon.com/512/3014/3014534.png",
+    is_active: true,
   },
   {
     id: "3",
     name: "Mie Instan",
-    description: "Mie Instan",
+    slug: "mie-instan",
+    description: "Mie instan rebus dan goreng berbagai varian",
     img: "https://cdn-icons-png.flaticon.com/512/599/599502.png",
+    is_active: true,
   },
   {
     id: "4",
     name: "Air Mineral",
-    description: "Air Mineral",
+    slug: "air-mineral",
+    description: "Air mineral botol dan galon berbagai ukuran",
     img: "https://cdn-icons-png.flaticon.com/512/3100/3100566.png",
+    is_active: true,
   },
 ];
 

@@ -2,6 +2,6 @@
 
 import { CategoriesForm } from "@/app/components/molecules";
 
-export default function NewCategoriesModal() {
+export default function NewCategoryModal() {
   return <CategoriesForm />;
 }

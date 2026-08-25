@@ -55,53 +55,57 @@ export interface ApiErrorResponse {
 export interface Category {
   id: string;
   name: string;
-  description: string;
-  slug: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  description?: string;
+  slug?: string;
+  img?: string;
+  img_url?: string;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CreateCategory {
   name: string;
-  description: string;
-  slug: string;
-  is_active: boolean;
+  description?: string;
+  slug?: string;
+  img?: string;
+  img_url?: string;
+  is_active?: boolean;
 }
 
 export interface Supplier {
   id: string;
   name: string;
-  code: string;
-  contact_person: string;
-  phone: string;
-  email: string;
-  address: string;
-  city: string;
-  province: string;
-  bank_name: string;
-  bank_account_number: string;
-  bank_account_name: string;
-  notes: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  code?: string;
+  contact_person?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  city?: string;
+  province?: string;
+  bank_name?: string;
+  bank_account_number?: string;
+  bank_account_name?: string;
+  notes?: string;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CreateSupplier {
   name: string;
-  code: string;
-  contact_person: string;
-  phone: string;
-  email: string;
-  address: string;
-  city: string;
-  province: string;
-  bank_name: string;
-  bank_account_number: string;
-  bank_account_name: string;
-  notes: string;
-  is_active: boolean;
+  code?: string;
+  contact_person?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  city?: string;
+  province?: string;
+  bank_name?: string;
+  bank_account_number?: string;
+  bank_account_name?: string;
+  notes?: string;
+  is_active?: boolean;
 }
 
 export interface Product {
@@ -116,8 +120,8 @@ export interface Product {
   min_stock: number;
   img_url: string;
   is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface ProductListResponse {

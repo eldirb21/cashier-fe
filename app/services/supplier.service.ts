@@ -4,7 +4,7 @@ import { CreateSupplier, Supplier } from "../libs/types";
 export const supplierService = {
   getAll: async () => {
     const response = await axiosInstance.get<Supplier[]>(`/suppliers`);
-    return response;
+    return response.data;
   },
   getById: async (id: string) => {
     const response = await axiosInstance.get<Supplier>(`/suppliers/${id}`);
