@@ -5,6 +5,7 @@ import { selectCurrentUser } from "@/app/store/slices/authSlice";
 import { useI18n } from "@/app/i18n";
 import { Headers } from "../atoms";
 import { HiOutlineBell, HiChat } from "react-icons/hi";
+import { BestSellingChart, LimitStock, StatsCards } from "../molecules";
 
 export default function Dashboard() {
   const user = useAppSelector(selectCurrentUser);
@@ -61,6 +62,17 @@ export default function Dashboard() {
           value="0"
         />
       </div>
+      <main className="max-w-350 mx-auto p-4 md:p-6 lg:p-8 space-y-6">
+        <StatsCards />
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <BestSellingChart />
+          </div>
+
+          <LimitStock />
+        </div>
+      </main>
 
       {/* Placeholder area untuk chart/table selanjutnya */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">

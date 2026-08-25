@@ -71,25 +71,25 @@ export const MENU_CONFIG: MenuItem[] = [
   },
   {
     key: "product",
-    path: "/products",
+    path: "/cproduct",
     icon: "cube",
     section: "Customer Menu",
     roles: [ROLE.CUSTOMER],
   },
   {
     key: "transactions",
-    path: "/transactions",
+    path: "/ctransaction",
     icon: "cart",
     section: "Main",
-    roles: [...ALL_INTERNAL, ROLE.CUSTOMER],
-  },
-  {
-    key: "scan",
-    path: "/transactions#scan",
-    icon: "qrcode",
-    section: "Customer Menu",
     roles: [ROLE.CUSTOMER],
   },
+  // {
+  //   key: "scan",
+  //   path: "/transactions#scan",
+  //   icon: "qrcode",
+  //   section: "Customer Menu",
+  //   roles: [ROLE.CUSTOMER],
+  // },
   {
     key: "history",
     path: "/transactions#history",
@@ -103,6 +103,13 @@ export const MENU_CONFIG: MenuItem[] = [
     icon: "user",
     section: "Customer Menu",
     roles: [],
+  },
+  {
+    key: "transactions",
+    path: "/transaction",
+    icon: "cart",
+    section: "Main",
+    roles: ALL_INTERNAL,
   },
   {
     key: "master",
