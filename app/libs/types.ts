@@ -204,3 +204,20 @@ export interface StockMovement {
   note: string;
   created_at: string;
 }
+
+export interface CreateTransactionRequestItem {
+  product_id: string;
+  qty: number;
+  discount: number;
+}
+
+export interface CreateTransactionRequest {
+  id: string;
+  customer_id: string;
+  items: CreateTransactionRequestItem[];
+  discount: number;
+  tax: number;
+  payment_method: PaymentMethod;
+  payment_amount: number;
+  notes: string;
+}
