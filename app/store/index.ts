@@ -5,6 +5,7 @@ import productReducer from "./slices/productSlice";
 import supplierReducer from "./slices/supplierSlice";
 import configReducer from "./slices/configSlice";
 import cartReducer from "./slices/cartSlice";
+import transactionReducer from "./slices/transactionSlice";
 
 export const makeStore = () => {
   return configureStore({
@@ -15,6 +16,7 @@ export const makeStore = () => {
       supplier: supplierReducer,
       config: configReducer,
       cart: cartReducer,
+      transaction: transactionReducer,
     },
   });
 };

@@ -1,7 +1,8 @@
 "use client";
 
 import { Headers } from "@/app/components/atoms";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { transactionService } from "@/app/services/transaction.service";
 import { HiOutlineFilter } from "react-icons/hi";
 import {
   HiOutlineDocumentText,
@@ -43,7 +44,7 @@ interface SaleRow {
   subtotal: number;
   discount: number;
   total: number;
-  payment: "cash" | "transfer" | "member";
+  payment: "cash" | "transfer" | "member" | string;
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -142,11 +143,17 @@ function StatCard({
 const paymentStyle: Record<string, string> = {
   cash: "bg-emerald-50 text-emerald-700 border-emerald-100",
   transfer: "bg-blue-50 text-blue-700 border-blue-100",
+  qris: "bg-purple-50 text-purple-700 border-purple-100",
+  debit: "bg-indigo-50 text-indigo-700 border-indigo-100",
+  card: "bg-indigo-50 text-indigo-700 border-indigo-100",
   member: "bg-amber-50 text-amber-700 border-amber-100",
 };
 const paymentLabel: Record<string, string> = {
   cash: "Tunai",
   transfer: "Transfer",
+  qris: "QRIS",
+  debit: "Debit",
+  card: "Kartu",
   member: "Member",
 };
 
@@ -155,8 +162,9 @@ const paymentLabel: Record<string, string> = {
 const PAGE_SIZE = 8;
 
 const ReportProfit = () => {
+  const [allData, setAllData] = useState<SaleRow[]>(RAW_DATA);
   const [startDate, setStartDate] = useState("2024-09-01");
-  const [endDate, setEndDate] = useState("2024-09-19");
+  const [endDate, setEndDate] = useState("2026-12-31");
   const [search, setSearch] = useState("");
   const [cashierFilter, setCashierFilter] = useState("all");
   const [paymentFilter, setPaymentFilter] = useState("all");
@@ -165,9 +173,36 @@ const ReportProfit = () => {
   const [sortKey, setSortKey] = useState<keyof SaleRow>("date");
   const [sortAsc, setSortAsc] = useState(false);
 
+  useEffect(() => {
+    async function loadLiveTransactions() {
+      try {
+        const res = await transactionService.getTransactionList();
+        if (res?.data && res.data.length > 0) {
+          const liveRows: SaleRow[] = res.data.map((trx) => ({
+            date: trx.created_at,
+            invoice: trx.invoice_number,
+            cashier: trx.cashier_name || "Kasir",
+            customer: trx.customer_name || "Umum",
+            items: trx.items?.length || 1,
+            subtotal: Number(trx.total_amount) || Number(trx.grand_total),
+            discount: Number(trx.discount) || 0,
+            total: Number(trx.grand_total),
+            payment: (trx.payment_method || "cash").toLowerCase(),
+          }));
+          const merged = [...liveRows, ...RAW_DATA];
+          setAllData(merged);
+          setFiltered(merged);
+        }
+      } catch (err) {
+        console.error("Live transaction load error in profit report:", err);
+      }
+    }
+    loadLiveTransactions();
+  }, []);
+
   const cashiers = useMemo(
-    () => ["all", ...Array.from(new Set(RAW_DATA.map((r) => r.cashier)))],
-    []
+    () => ["all", ...Array.from(new Set(allData.map((r) => r.cashier)))],
+    [allData]
   );
 
   const handleFilter = () => {
@@ -175,7 +210,7 @@ const ReportProfit = () => {
     const end = new Date(endDate);
     end.setHours(23, 59, 59);
     setFiltered(
-      RAW_DATA.filter((r) => {
+      allData.filter((r) => {
         const d = new Date(r.date);
         const inRange = d >= start && d <= end;
         const inSearch =

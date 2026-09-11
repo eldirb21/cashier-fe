@@ -1,7 +1,8 @@
 "use client";
 
 import { Headers } from "@/app/components/atoms";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { transactionService } from "@/app/services/transaction.service";
 import { HiOutlineFilter } from "react-icons/hi";
 import {
   HiOutlineDocumentText,
@@ -482,8 +483,9 @@ function StatCard({
 // ── main ──────────────────────────────────────────────────────────────────────
 
 const ReportSales = () => {
+  const [allData, setAllData] = useState<SaleItemRow[]>(RAW_DATA);
   const [startDate, setStartDate] = useState("2024-09-01");
-  const [endDate, setEndDate] = useState("2024-09-19");
+  const [endDate, setEndDate] = useState("2026-12-31");
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [cashierFilter, setCashierFilter] = useState("all");
@@ -492,13 +494,63 @@ const ReportSales = () => {
   const [sortKey, setSortKey] = useState<keyof SaleItemRow>("date");
   const [sortAsc, setSortAsc] = useState(false);
 
+  useEffect(() => {
+    async function loadLiveTransactions() {
+      try {
+        const res = await transactionService.getTransactionList();
+        if (res?.data && res.data.length > 0) {
+          const liveRows: SaleItemRow[] = [];
+          res.data.forEach((trx) => {
+            if (trx.items && trx.items.length > 0) {
+              trx.items.forEach((item) => {
+                liveRows.push({
+                  date: trx.created_at,
+                  invoice: trx.invoice_number,
+                  cashier: trx.cashier_name || "Kasir",
+                  product_name: item.product_name,
+                  category: "Umum",
+                  barcode: "-",
+                  qty: Number(item.qty),
+                  price: Number(item.price),
+                  discount_pct: Number(item.discount || 0),
+                  subtotal: Number(item.subtotal),
+                  total: Number(item.subtotal),
+                });
+              });
+            } else {
+              liveRows.push({
+                date: trx.created_at,
+                invoice: trx.invoice_number,
+                cashier: trx.cashier_name || "Kasir",
+                product_name: "Penjualan Kasir",
+                category: "Umum",
+                barcode: "-",
+                qty: 1,
+                price: Number(trx.grand_total),
+                discount_pct: Number(trx.discount || 0),
+                subtotal: Number(trx.grand_total),
+                total: Number(trx.grand_total),
+              });
+            }
+          });
+          const merged = [...liveRows, ...RAW_DATA];
+          setAllData(merged);
+          setFiltered(merged);
+        }
+      } catch (err) {
+        console.error("Live transaction load error:", err);
+      }
+    }
+    loadLiveTransactions();
+  }, []);
+
   const categories = useMemo(
-    () => ["all", ...Array.from(new Set(RAW_DATA.map((r) => r.category)))],
-    [],
+    () => ["all", ...Array.from(new Set(allData.map((r) => r.category)))],
+    [allData],
   );
   const cashiers = useMemo(
-    () => ["all", ...Array.from(new Set(RAW_DATA.map((r) => r.cashier)))],
-    [],
+    () => ["all", ...Array.from(new Set(allData.map((r) => r.cashier)))],
+    [allData],
   );
 
   const handleFilter = () => {
@@ -506,7 +558,7 @@ const ReportSales = () => {
     const end = new Date(endDate);
     end.setHours(23, 59, 59);
     setFiltered(
-      RAW_DATA.filter((r) => {
+      allData.filter((r) => {
         const d = new Date(r.date);
         const inRange = d >= start && d <= end;
         const inSearch =

@@ -221,3 +221,67 @@ export interface CreateTransactionRequest {
   payment_amount: number;
   notes: string;
 }
+
+export interface TransactionItemRecord {
+  id: string;
+  transaction_id: string;
+  product_id: string;
+  product_name: string;
+  price: number;
+  cost_price: number;
+  qty: number;
+  discount: number;
+  subtotal: number;
+  created_at?: string;
+}
+
+export interface TransactionRecord {
+  id: string;
+  customer_id?: string | null;
+  customer_name?: string | null;
+  user_id?: string | number;
+  cashier_name?: string | null;
+  invoice_number: string;
+  total_amount: number;
+  discount: number;
+  tax: number;
+  grand_total: number;
+  payment_method: PaymentMethod | string;
+  payment_amount: number;
+  change_amount: number;
+  status: "pending" | "completed" | "cancelled";
+  notes?: string | null;
+  created_at: string;
+  updated_at?: string;
+  items?: TransactionItemRecord[];
+}
+
+export interface TransactionSummaryMetrics {
+  total_transactions: number;
+  total_revenue: number;
+  total_discount: number;
+  total_tax: number;
+  avg_transaction: number;
+}
+
+export interface PaymentMethodBreakdown {
+  payment_method: string;
+  count: number;
+  total: number;
+}
+
+export interface TransactionSummaryResponse {
+  summary: TransactionSummaryMetrics;
+  by_payment_method: PaymentMethodBreakdown[];
+}
+
+export interface TransactionQueryParams {
+  status?: string;
+  payment_method?: string;
+  customer_id?: string;
+  user_id?: string | number;
+  search?: string;
+  date_from?: string;
+  date_to?: string;
+}
+

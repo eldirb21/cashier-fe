@@ -1,66 +1,95 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { transactionService } from "@/app/services/transaction.service";
-import { CreateTransactionRequest, RoleType } from "@/app/libs";
+import {
+  CreateTransactionRequest,
+  TransactionQueryParams,
+  TransactionRecord,
+  TransactionSummaryResponse,
+} from "@/app/libs";
 import { RootState } from "..";
 
 interface TransactionState {
-  transaction: CreateTransactionRequest | null;
+  list: TransactionRecord[];
+  summary: TransactionSummaryResponse | null;
+  currentTransaction: TransactionRecord | null;
   isLoading: boolean;
   error: string | null;
 }
 
 const initialState: TransactionState = {
-  transaction: null,
+  list: [],
+  summary: null,
+  currentTransaction: null,
   isLoading: false,
   error: null,
 };
 
 export const getTransactionList = createAsyncThunk(
   "transaction/list",
-  async (payload: string) => {
-    return await transactionService.getTransactionList(payload);
+  async (payload?: TransactionQueryParams | string) => {
+    const res = await transactionService.getTransactionList(payload);
+    return res.data;
   },
 );
 
 export const getTransactionSummary = createAsyncThunk(
   "transaction/summary",
-  async (query?: string) => {
-    return await transactionService.getTransactionSummary(query);
+  async (params?: { date_from?: string; date_to?: string }) => {
+    const res = await transactionService.getTransactionSummary(params);
+    return res.data;
   },
 );
 
 export const getTransactionDetail = createAsyncThunk(
   "transaction/detail",
   async (payload: string) => {
-    return await transactionService.getTransactionDetail(payload);
+    const res = await transactionService.getTransactionDetail(payload);
+    return res.data;
   },
 );
 
-export const deleteTransactionItem = createAsyncThunk(
-  "transaction/deleteItem",
+export const deleteTransaction = createAsyncThunk(
+  "transaction/delete",
   async (payload: string) => {
-    return await transactionService.deleteTransactionItem(payload);
+    await transactionService.deleteTransaction(payload);
+    return payload;
   },
 );
 
 export const createTransaction = createAsyncThunk(
   "transaction/create",
   async (payload: CreateTransactionRequest) => {
-    return await transactionService.createTransaction(payload);
+    const res = await transactionService.createTransaction(payload);
+    return res.data;
   },
 );
 
 export const updateTransactionStatus = createAsyncThunk(
   "transaction/updateStatus",
-  async (payload: string) => {
-    return await transactionService.updateTransactionStatus(payload);
+  async (payload: {
+    id: string;
+    status: "pending" | "completed" | "cancelled";
+    notes?: string;
+  }) => {
+    const res = await transactionService.updateTransactionStatus(
+      payload.id,
+      payload,
+    );
+    return res.data;
   },
 );
 
 export const transactionSlice = createSlice({
   name: "transaction",
   initialState,
-  reducers: {},
+  reducers: {
+    clearCurrentTransaction: (state) => {
+      state.currentTransaction = null;
+    },
+    clearTransactionError: (state) => {
+      state.error = null;
+    },
+  },
   extraReducers: (builder) => {
     builder
       // Create Transaction
@@ -70,11 +99,12 @@ export const transactionSlice = createSlice({
       })
       .addCase(createTransaction.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.transaction = action.payload;
+        state.list.unshift(action.payload);
+        state.currentTransaction = action.payload;
       })
       .addCase(createTransaction.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = (action.payload as string) ?? "Terjadi kesalahan";
+        state.error = (action.error.message as string) ?? "Gagal membuat transaksi";
       })
 
       // Update Transaction Status
@@ -84,24 +114,31 @@ export const transactionSlice = createSlice({
       })
       .addCase(updateTransactionStatus.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.transaction = action.payload;
+        state.currentTransaction = action.payload;
+        const idx = state.list.findIndex((t) => t.id === action.payload.id);
+        if (idx !== -1) {
+          state.list[idx] = action.payload;
+        }
       })
       .addCase(updateTransactionStatus.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = (action.payload as string) ?? "Terjadi kesalahan";
+        state.error =
+          (action.error.message as string) ?? "Gagal update status transaksi";
       })
 
-      // Delete Transaction Item
-      .addCase(deleteTransactionItem.pending, (state) => {
+      // Delete Transaction
+      .addCase(deleteTransaction.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(deleteTransactionItem.fulfilled, (state) => {
+      .addCase(deleteTransaction.fulfilled, (state, action) => {
         state.isLoading = false;
+        state.list = state.list.filter((t) => t.id !== action.payload);
       })
-      .addCase(deleteTransactionItem.rejected, (state, action) => {
+      .addCase(deleteTransaction.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = (action.payload as string) ?? "Terjadi kesalahan";
+        state.error =
+          (action.error.message as string) ?? "Gagal menghapus transaksi";
       })
 
       // Get Transaction Summary
@@ -111,11 +148,12 @@ export const transactionSlice = createSlice({
       })
       .addCase(getTransactionSummary.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.transaction = action.payload;
+        state.summary = action.payload;
       })
       .addCase(getTransactionSummary.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = (action.payload as string) ?? "Terjadi kesalahan";
+        state.error =
+          (action.error.message as string) ?? "Gagal mengambil rekap transaksi";
       })
 
       // Get Transaction Detail
@@ -125,11 +163,12 @@ export const transactionSlice = createSlice({
       })
       .addCase(getTransactionDetail.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.transaction = action.payload;
+        state.currentTransaction = action.payload;
       })
       .addCase(getTransactionDetail.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = (action.payload as string) ?? "Terjadi kesalahan";
+        state.error =
+          (action.error.message as string) ?? "Gagal mengambil detail transaksi";
       })
 
       // Get Transaction List
@@ -139,21 +178,29 @@ export const transactionSlice = createSlice({
       })
       .addCase(getTransactionList.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.transaction = action.payload;
+        state.list = action.payload;
       })
       .addCase(getTransactionList.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = (action.payload as string) ?? "Terjadi kesalahan";
+        state.error =
+          (action.error.message as string) ?? "Gagal mengambil daftar transaksi";
       });
   },
 });
 
-export const selectIsAuthLoading = (state: RootState) => state.auth.isLoading;
-export const selectCurrentUser = (state: RootState) => state.auth.user;
-export const selectUserRole = (state: RootState): RoleType | undefined =>
-  state.auth.user?.role;
-export const selectIsInitialized = (state: RootState) =>
-  state.auth.isInitialized;
-export const selectAuthError = (state: RootState) => state.auth.error;
+export const { clearCurrentTransaction, clearTransactionError } =
+  transactionSlice.actions;
+
+export const selectTransactions = (state: RootState) =>
+  state.transaction?.list ?? [];
+export const selectTransactionSummary = (state: RootState) =>
+  state.transaction?.summary ?? null;
+export const selectCurrentTransaction = (state: RootState) =>
+  state.transaction?.currentTransaction ?? null;
+export const selectIsTransactionLoading = (state: RootState) =>
+  state.transaction?.isLoading ?? false;
+export const selectTransactionError = (state: RootState) =>
+  state.transaction?.error ?? null;
 
 export default transactionSlice.reducer;
+
