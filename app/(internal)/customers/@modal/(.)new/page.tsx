@@ -3,5 +3,5 @@
 import { CustomerForm } from "@/app/components/molecules";
 
 export default function NewCustomerModal() {
-  return <CustomerForm />;
+  return <CustomerForm isModal={true} />;
 }
