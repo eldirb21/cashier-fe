@@ -20,23 +20,23 @@ export const productService = {
     );
     return response;
   },
-  getById: async (id: string) => {
-    const response = await axiosInstance.get<Product>(`/products/${id}`);
-    return response;
+  getById: async (id: string): Promise<Product> => {
+    const response = await axiosInstance.get<{ data: Product } | Product>(`/products/${id}`);
+    return (response.data as any)?.data || response.data;
   },
-  create: async (payload: CreateProduct) => {
-    const response = await axiosInstance.post<Product>(`/products`, payload);
-    return response;
+  create: async (payload: CreateProduct): Promise<Product> => {
+    const response = await axiosInstance.post<{ data: Product } | Product>(`/products`, payload);
+    return (response.data as any)?.data || response.data;
   },
-  update: async (id: string, payload: Product) => {
-    const response = await axiosInstance.put<Product>(
+  update: async (id: string, payload: Partial<Product>): Promise<Product> => {
+    const response = await axiosInstance.put<{ data: Product } | Product>(
       `/products/${id}`,
       payload,
     );
-    return response;
+    return (response.data as any)?.data || response.data;
   },
   delete: async (id: string) => {
-    const response = await axiosInstance.delete<Product>(`/products/${id}`);
-    return response;
+    const response = await axiosInstance.delete(`/products/${id}`);
+    return response.data;
   },
 };

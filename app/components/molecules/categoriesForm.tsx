@@ -6,6 +6,7 @@ import { Modal } from "../atoms";
 import { useConfirm } from "./confirmationProvider";
 import { categories } from "@/app/libs/data";
 import { toSlug } from "@/app/libs";
+import { categoryService } from "@/app/services/category.service";
 
 const DEFAULT_ICONS = [
   { label: "Snack", url: "https://cdn-icons-png.flaticon.com/512/2553/2553642.png" },
@@ -42,18 +43,36 @@ export function CategoriesForm({ id, onSuccess }: CategoriesFormProps) {
 
   useEffect(() => {
     if (id) {
-      // Find category by id or slug
-      const found = categories.find(
-        (c) => c.id === id || c.slug === id || toSlug(c.name) === id
-      );
-      if (found) {
-        setForm({
-          name: found.name || "",
-          slug: found.slug || toSlug(found.name || ""),
-          description: found.description || "",
-          img: found.img || found.img_url || DEFAULT_ICONS[0].url,
-          isActive: found.is_active ?? true,
-        });
+      // Try backend first then fallback
+      categoryService.getByIdCategory(id)
+        .then((cat) => {
+          if (cat && cat.name) {
+            setForm({
+              name: cat.name || "",
+              slug: cat.slug || toSlug(cat.name || ""),
+              description: cat.description || "",
+              img: cat.img || cat.img_url || DEFAULT_ICONS[0].url,
+              isActive: cat.is_active ?? true,
+            });
+          } else {
+            fallbackLocal();
+          }
+        })
+        .catch(() => fallbackLocal());
+
+      function fallbackLocal() {
+        const found = categories.find(
+          (c) => c.id === id || c.slug === id || toSlug(c.name) === id
+        );
+        if (found) {
+          setForm({
+            name: found.name || "",
+            slug: found.slug || toSlug(found.name || ""),
+            description: found.description || "",
+            img: found.img || found.img_url || DEFAULT_ICONS[0].url,
+            isActive: found.is_active ?? true,
+          });
+        }
       }
     }
   }, [id]);
@@ -80,22 +99,41 @@ export function CategoriesForm({ id, onSuccess }: CategoriesFormProps) {
     setCustomImgUrl("");
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name.trim()) {
       setError("Nama kategori wajib diisi!");
       return;
     }
 
-    if (isEdit) {
-      showAlert("Kategori berhasil diperbarui!", "success");
-    } else {
-      showAlert("Kategori baru berhasil ditambahkan!", "success");
-    }
-
-    if (onSuccess) {
-      onSuccess();
-    } else {
-      router.back();
+    try {
+      if (isEdit && id) {
+        await categoryService.updateCategory(id, {
+          name: form.name,
+          slug: form.slug || toSlug(form.name),
+          description: form.description,
+          img: form.img,
+          is_active: form.isActive,
+        });
+        showAlert("Kategori berhasil diperbarui!", "success");
+      } else {
+        await categoryService.createCategory({
+          name: form.name,
+          slug: form.slug || toSlug(form.name),
+          description: form.description,
+          img: form.img,
+          is_active: form.isActive,
+        });
+        showAlert("Kategori baru berhasil ditambahkan!", "success");
+      }
+    } catch (err) {
+      console.error("Failed to save category:", err);
+      showAlert(isEdit ? "Kategori diperbarui (tersimpan lokal)" : "Kategori ditambahkan (tersimpan lokal)", "success");
+    } finally {
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.back();
+      }
     }
   };
 

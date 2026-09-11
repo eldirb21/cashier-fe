@@ -2,30 +2,35 @@ import { axiosInstance } from "../libs";
 import { Category, CreateCategory } from "../libs/types";
 
 export const categoryService = {
-  getAll: async () => {
-    const response = await axiosInstance.get<{ data: Category[] }>(
-      `/categories`,
+  getAll: async (): Promise<Category[]> => {
+    const response = await axiosInstance.get<{ data: Category[] } | Category[]>(
+      `/categories`
     );
-
-    return response.data.data;
+    const result = (response.data as any)?.data || response.data;
+    return Array.isArray(result) ? result : [];
   },
-  getByIdCategory: async (id: string) => {
-    const response = await axiosInstance.get<Category>(`/categories/${id}`);
-    return response;
+  getByIdCategory: async (id: string): Promise<Category> => {
+    const response = await axiosInstance.get<{ data: Category } | Category>(
+      `/categories/${id}`
+    );
+    return (response.data as any)?.data || response.data;
   },
   createCategory: async (payload: CreateCategory) => {
-    const response = await axiosInstance.post<Category>(`/categories`, payload);
-    return response;
-  },
-  updateCategory: async (id: string, payload: Category) => {
-    const response = await axiosInstance.put<Category>(
-      `/categories/${id}`,
-      payload,
+    const response = await axiosInstance.post<{ data: Category } | Category>(
+      `/categories`,
+      payload
     );
-    return response;
+    return (response.data as any)?.data || response.data;
+  },
+  updateCategory: async (id: string, payload: Partial<Category>) => {
+    const response = await axiosInstance.put<{ data: Category } | Category>(
+      `/categories/${id}`,
+      payload
+    );
+    return (response.data as any)?.data || response.data;
   },
   deleteCategory: async (id: string) => {
-    const response = await axiosInstance.delete<Category>(`/categories/${id}`);
-    return response;
+    const response = await axiosInstance.delete(`/categories/${id}`);
+    return response.data;
   },
 };
