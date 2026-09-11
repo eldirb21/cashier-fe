@@ -2,6 +2,25 @@ export type PaymentMethod = "cash" | "debit" | "qris" | "transfer";
 export type OrderStatus = "open" | "paid" | "voided";
 export type DiscountType = "percentage" | "fixed";
 export type MovementType = "purchase" | "sale" | "adjustment" | "void";
+export type MemberLevel = "regular" | "silver" | "gold" | "platinum";
+
+export interface Customer {
+  id: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  gender?: "male" | "female" | "other";
+  birth_date?: string;
+  member_code?: string;
+  member_level?: MemberLevel;
+  points?: number;
+  total_spending?: number;
+  is_active?: boolean;
+  joined_at?: string;
+  created_at?: string;
+  updated_at?: string;
+}
 
 export interface PaginationRequest {
   page?: number;

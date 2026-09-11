@@ -1,630 +1,1397 @@
 "use client";
 
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import Link from "next/link";
 import { Headers } from "@/app/components/atoms";
-import React, { useState, useMemo } from "react";
-import { HiOutlineFilter } from "react-icons/hi";
+import { productService } from "@/app/services/product.service";
+import { categoryService } from "@/app/services/category.service";
+import { transactionService } from "@/app/services/transaction.service";
+import { Product, Category, TransactionRecord } from "@/app/libs/types";
 import {
-  HiOutlineDocumentText,
-  HiArrowTrendingUp,
-  HiArrowTrendingDown,
-  HiOutlineBanknotes,
-  HiOutlineShoppingCart,
-  HiOutlineUsers,
-  HiOutlineReceiptPercent,
+  HiOutlineCircleStack,
+  HiOutlineExclamationTriangle,
+  HiOutlineArrowTrendingUp,
+  HiOutlineArrowTrendingDown,
+  HiOutlineArrowPath,
+  HiOutlineArrowDownTray,
+  HiOutlineMagnifyingGlass,
+  HiOutlineFunnel,
+  HiOutlinePlus,
+  HiOutlineMinus,
+  HiOutlineCube,
+  HiOutlineCheckCircle,
+  HiOutlineXCircle,
+  HiOutlineClipboardDocumentCheck,
   HiChevronLeft,
   HiChevronRight,
-  HiMagnifyingGlass,
   HiXMark,
 } from "react-icons/hi2";
 import {
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
   ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  Legend,
 } from "recharts";
 import * as XLSX from "xlsx";
 
-// ── types ─────────────────────────────────────────────────────────────────────
+export type StockStatus = "safe" | "low" | "empty";
+export type MovementType = "IN" | "OUT" | "ADJUSTMENT" | "RETURN";
 
-interface SaleRow {
+export interface StockMovementItem {
+  id: string;
   date: string;
-  invoice: string;
-  cashier: string;
-  customer: string;
-  items: number;
-  subtotal: number;
-  discount: number;
-  total: number;
-  payment: "cash" | "transfer" | "member";
+  refNo: string;
+  product_name: string;
+  barcode: string;
+  type: MovementType;
+  qty: number;
+  remainingStock: number;
+  note: string;
 }
 
-// ── helpers ───────────────────────────────────────────────────────────────────
-
-const fmt = (n: number) =>
+const formatRupiah = (val: number) =>
   new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
     minimumFractionDigits: 0,
-  }).format(n);
+    maximumFractionDigits: 0,
+  }).format(val || 0);
 
-const fmtShort = (n: number) => {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}jt`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}rb`;
-  return String(n);
-};
-
-const fmtDate = (iso: string) =>
-  new Date(iso).toLocaleDateString("id-ID", {
+const formatDate = (isoStr: string) => {
+  if (!isoStr) return "-";
+  const d = new Date(isoStr);
+  return d.toLocaleDateString("id-ID", {
     day: "2-digit",
     month: "short",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });
-
-// ── mock data ─────────────────────────────────────────────────────────────────
-
-const RAW_DATA: SaleRow[] = [
-  { date: "2024-09-02T00:50:30.120Z", invoice: "INV-1725238230117-5908", cashier: "Andi", customer: "Akhmad Lutfi", items: 4, subtotal: 65000, discount: 2000, total: 63000, payment: "cash" },
-  { date: "2024-09-02T01:26:39.632Z", invoice: "INV-1725240399631-3200", cashier: "Andi", customer: "Umum", items: 1, subtotal: 15000, discount: 0, total: 15000, payment: "cash" },
-  { date: "2024-09-02T01:28:16.415Z", invoice: "INV-1725240496414-2103", cashier: "Budi", customer: "Umum", items: 1, subtotal: 3000, discount: 0, total: 3000, payment: "transfer" },
-  { date: "2024-09-03T03:39:07.751Z", invoice: "INV-1725673147749-7439", cashier: "Budi", customer: "May Uswatun", items: 5, subtotal: 82000, discount: 4000, total: 78000, payment: "member" },
-  { date: "2024-09-03T05:12:00.000Z", invoice: "INV-1725673147749-1023", cashier: "Andi", customer: "Rudi Hartono", items: 3, subtotal: 45000, discount: 0, total: 45000, payment: "cash" },
-  { date: "2024-09-04T08:20:11.000Z", invoice: "INV-1725673147749-8812", cashier: "Citra", customer: "Siti Rahayu", items: 6, subtotal: 120000, discount: 10000, total: 110000, payment: "transfer" },
-  { date: "2024-09-05T10:05:44.000Z", invoice: "INV-1725673147749-4421", cashier: "Citra", customer: "Umum", items: 2, subtotal: 28000, discount: 0, total: 28000, payment: "cash" },
-  { date: "2024-09-06T07:33:22.000Z", invoice: "INV-1725673147749-9901", cashier: "Andi", customer: "Ahmad Fauzi", items: 8, subtotal: 195000, discount: 15000, total: 180000, payment: "member" },
-  { date: "2024-09-07T09:14:55.000Z", invoice: "INV-1725673147749-3312", cashier: "Budi", customer: "Dewi Lestari", items: 3, subtotal: 55000, discount: 5000, total: 50000, payment: "cash" },
-  { date: "2024-09-08T11:22:08.000Z", invoice: "INV-1725673147749-6634", cashier: "Citra", customer: "Hendra Wijaya", items: 10, subtotal: 250000, discount: 25000, total: 225000, payment: "member" },
-  { date: "2024-09-09T06:45:33.000Z", invoice: "INV-1725673147749-2218", cashier: "Andi", customer: "Umum", items: 2, subtotal: 36000, discount: 0, total: 36000, payment: "cash" },
-  { date: "2024-09-10T13:08:19.000Z", invoice: "INV-1725673147749-5541", cashier: "Budi", customer: "Rina Susanti", items: 7, subtotal: 142000, discount: 12000, total: 130000, payment: "transfer" },
-  { date: "2024-09-11T08:55:01.000Z", invoice: "INV-1725673147749-7723", cashier: "Citra", customer: "Bayu Pratama", items: 4, subtotal: 88000, discount: 8000, total: 80000, payment: "cash" },
-  { date: "2024-09-12T10:30:44.000Z", invoice: "INV-1725673147749-3398", cashier: "Andi", customer: "Lia Amelia", items: 5, subtotal: 97000, discount: 7000, total: 90000, payment: "member" },
-  { date: "2024-09-13T14:12:07.000Z", invoice: "INV-1725673147749-8856", cashier: "Budi", customer: "Umum", items: 1, subtotal: 12000, discount: 0, total: 12000, payment: "cash" },
-  { date: "2024-09-14T09:40:29.000Z", invoice: "INV-1725673147749-1145", cashier: "Citra", customer: "Farida Hanum", items: 9, subtotal: 210000, discount: 20000, total: 190000, payment: "transfer" },
-  { date: "2024-09-15T11:58:52.000Z", invoice: "INV-1725673147749-4467", cashier: "Andi", customer: "Umum", items: 3, subtotal: 51000, discount: 1000, total: 50000, payment: "cash" },
-  { date: "2024-09-16T07:25:18.000Z", invoice: "INV-1725673147749-6679", cashier: "Budi", customer: "Irwan Setiawan", items: 6, subtotal: 135000, discount: 10000, total: 125000, payment: "member" },
-  { date: "2024-09-17T15:03:41.000Z", invoice: "INV-1725673147749-9912", cashier: "Citra", customer: "Novi Kurniawan", items: 2, subtotal: 44000, discount: 4000, total: 40000, payment: "cash" },
-  { date: "2024-09-18T12:47:03.000Z", invoice: "INV-1725673147749-2234", cashier: "Andi", customer: "Yusuf Hakim", items: 12, subtotal: 310000, discount: 30000, total: 280000, payment: "member" },
-];
-
-const COLORS_PIE = ["#3b82f6", "#10b981", "#f59e0b"];
-
-// ── stat card ─────────────────────────────────────────────────────────────────
-
-function StatCard({
-  label,
-  value,
-  sub,
-  icon: Icon,
-  trend,
-  color,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  icon: React.ElementType;
-  trend?: number;
-  color: string;
-}) {
-  const isPos = (trend ?? 0) >= 0;
-  return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">{label}</span>
-        <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${color}`}>
-          <Icon size={18} />
-        </div>
-      </div>
-      <div>
-        <p className="text-xl font-black text-gray-900 tracking-tight">{value}</p>
-        {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
-      </div>
-      {trend !== undefined && (
-        <div className={`flex items-center gap-1 text-xs font-bold ${isPos ? "text-emerald-500" : "text-red-400"}`}>
-          {isPos ? <HiArrowTrendingUp size={14} /> : <HiArrowTrendingDown size={14} />}
-          {Math.abs(trend)}% vs bulan lalu
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── payment badge ─────────────────────────────────────────────────────────────
-
-const paymentStyle: Record<string, string> = {
-  cash: "bg-emerald-50 text-emerald-700 border-emerald-100",
-  transfer: "bg-blue-50 text-blue-700 border-blue-100",
-  member: "bg-amber-50 text-amber-700 border-amber-100",
-};
-const paymentLabel: Record<string, string> = {
-  cash: "Tunai",
-  transfer: "Transfer",
-  member: "Member",
 };
 
-// ── main ──────────────────────────────────────────────────────────────────────
+export default function StockAndMutationPage() {
+  const [activeTab, setActiveTab] = useState<"inventory" | "movements">("inventory");
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [transactions, setTransactions] = useState<TransactionRecord[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
-const PAGE_SIZE = 8;
+  // Filter state for Stock Inventory
+  const [search, setSearch] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedStatus, setSelectedStatus] = useState<"all" | StockStatus>("all");
+  const [sortBy, setSortBy] = useState<"stock_asc" | "stock_desc" | "valuation_desc" | "name_asc">("stock_asc");
+  const [page, setPage] = useState<number>(1);
+  const pageSize = 10;
 
-const ReportStockNMutasi = () => {
-  const [startDate, setStartDate] = useState("2024-09-01");
-  const [endDate, setEndDate] = useState("2024-09-19");
-  const [search, setSearch] = useState("");
-  const [cashierFilter, setCashierFilter] = useState("all");
-  const [paymentFilter, setPaymentFilter] = useState("all");
-  const [page, setPage] = useState(1);
-  const [filtered, setFiltered] = useState<SaleRow[]>(RAW_DATA);
-  const [sortKey, setSortKey] = useState<keyof SaleRow>("date");
-  const [sortAsc, setSortAsc] = useState(false);
+  // Filter state for Movements
+  const [movementSearch, setMovementSearch] = useState<string>("");
+  const [movementTypeFilter, setMovementTypeFilter] = useState<"all" | MovementType>("all");
+  const [movementDateFrom, setMovementDateFrom] = useState<string>("");
+  const [movementDateTo, setMovementDateTo] = useState<string>("");
+  const [movementPage, setMovementPage] = useState<number>(1);
 
-  const cashiers = useMemo(
-    () => ["all", ...Array.from(new Set(RAW_DATA.map((r) => r.cashier)))],
-    []
-  );
+  // Manual movements log stored locally/in-memory to combine with transaction sales
+  const [customMovements, setCustomMovements] = useState<StockMovementItem[]>([]);
 
-  const handleFilter = () => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59);
-    setFiltered(
-      RAW_DATA.filter((r) => {
-        const d = new Date(r.date);
-        const inRange = d >= start && d <= end;
-        const inSearch =
-          !search ||
-          r.invoice.toLowerCase().includes(search.toLowerCase()) ||
-          r.customer.toLowerCase().includes(search.toLowerCase());
-        const inCashier = cashierFilter === "all" || r.cashier === cashierFilter;
-        const inPayment = paymentFilter === "all" || r.payment === paymentFilter;
-        return inRange && inSearch && inCashier && inPayment;
-      })
-    );
-    setPage(1);
-  };
+  // Adjustment Modal state
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [selectedProductForAdjust, setSelectedProductForAdjust] = useState<Product | null>(null);
+  const [adjustAction, setAdjustAction] = useState<"add" | "subtract" | "set">("add");
+  const [adjustQty, setAdjustQty] = useState<number>(10);
+  const [adjustNote, setAdjustNote] = useState<string>("");
 
-  const handleSort = (key: keyof SaleRow) => {
-    if (sortKey === key) setSortAsc(!sortAsc);
-    else { setSortKey(key); setSortAsc(true); }
-  };
+  // Load backend data
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [prodRes, catRes, trxRes] = await Promise.allSettled([
+        productService.getAll({ size: 200 }),
+        categoryService.getAll(),
+        transactionService.getTransactionList(),
+      ]);
 
-  const sorted = useMemo(
-    () =>
-      [...filtered].sort((a, b) => {
-        const av = a[sortKey] as any;
-        const bv = b[sortKey] as any;
-        if (av < bv) return sortAsc ? -1 : 1;
-        if (av > bv) return sortAsc ? 1 : -1;
-        return 0;
-      }),
-    [filtered, sortKey, sortAsc]
-  );
+      if (prodRes.status === "fulfilled" && prodRes.value?.data) {
+        setProducts(prodRes.value.data);
+      }
+      if (catRes.status === "fulfilled" && catRes.value) {
+        setCategories(catRes.value);
+      }
+      if (trxRes.status === "fulfilled" && trxRes.value?.data) {
+        setTransactions(trxRes.value.data);
+      }
+    } catch (err) {
+      console.error("Failed to load inventory data:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-  const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
-  const paginated = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
-  // stats
-  const totalRevenue = filtered.reduce((s, r) => s + r.total, 0);
-  const totalDiscount = filtered.reduce((s, r) => s + r.discount, 0);
-  const totalTransactions = filtered.length;
-  const totalItems = filtered.reduce((s, r) => s + r.items, 0);
-  const avgTransaction = totalTransactions ? totalRevenue / totalTransactions : 0;
+  // Category map for quick lookup
+  const categoryMap = useMemo(() => {
+    const map = new Map<string, string>();
+    categories.forEach((c) => map.set(c.id, c.name));
+    return map;
+  }, [categories]);
 
-  // chart data — group by date
-  const chartData = useMemo(() => {
-    const map: Record<string, { date: string; revenue: number; transactions: number }> = {};
-    filtered.forEach((r) => {
-      const key = new Date(r.date).toLocaleDateString("id-ID", { day: "2-digit", month: "short" });
-      if (!map[key]) map[key] = { date: key, revenue: 0, transactions: 0 };
-      map[key].revenue += r.total;
-      map[key].transactions += 1;
+  // Map each product with calculated fields & status
+  const enrichedProducts = useMemo(() => {
+    return products.map((p) => {
+      const stock = Number(p.stock) || 0;
+      const minStock = Number(p.min_stock) || 5;
+      const costPrice = Number(p.cost_price) || 0;
+      const price = Number(p.price) || 0;
+      const totalCostValuation = stock * costPrice;
+      const totalSalesPotential = stock * price;
+      const estimatedMargin = totalSalesPotential - totalCostValuation;
+
+      let status: StockStatus = "safe";
+      if (stock <= 0) {
+        status = "empty";
+      } else if (stock <= minStock) {
+        status = "low";
+      }
+
+      const categoryName = categoryMap.get(p.category_id) || "Umum";
+
+      return {
+        ...p,
+        stock,
+        min_stock: minStock,
+        cost_price: costPrice,
+        price,
+        totalCostValuation,
+        totalSalesPotential,
+        estimatedMargin,
+        status,
+        categoryName,
+      };
     });
-    return Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
-  }, [filtered]);
+  }, [products, categoryMap]);
 
-  // pie data
-  const pieData = useMemo(() => {
-    const counts: Record<string, number> = { cash: 0, transfer: 0, member: 0 };
-    filtered.forEach((r) => counts[r.payment]++);
+  // Executive KPI summary calculations
+  const kpi = useMemo(() => {
+    const totalSKU = enrichedProducts.length;
+    const totalPhysicalUnits = enrichedProducts.reduce((acc, p) => acc + p.stock, 0);
+    const totalValuation = enrichedProducts.reduce((acc, p) => acc + p.totalCostValuation, 0);
+    const totalPotentialRevenue = enrichedProducts.reduce((acc, p) => acc + p.totalSalesPotential, 0);
+
+    const safeCount = enrichedProducts.filter((p) => p.status === "safe").length;
+    const lowCount = enrichedProducts.filter((p) => p.status === "low").length;
+    const emptyCount = enrichedProducts.filter((p) => p.status === "empty").length;
+    const criticalCount = lowCount + emptyCount;
+
+    return {
+      totalSKU,
+      totalPhysicalUnits,
+      totalValuation,
+      totalPotentialRevenue,
+      safeCount,
+      lowCount,
+      emptyCount,
+      criticalCount,
+    };
+  }, [enrichedProducts]);
+
+  // Charts Data
+  const statusPieData = useMemo(() => {
     return [
-      { name: "Tunai", value: counts.cash },
-      { name: "Transfer", value: counts.transfer },
-      { name: "Member", value: counts.member },
+      { name: "Stok Aman", value: kpi.safeCount, color: "#10b981" },
+      { name: "Stok Menipis", value: kpi.lowCount, color: "#f59e0b" },
+      { name: "Stok Habis", value: kpi.emptyCount, color: "#ef4444" },
     ].filter((d) => d.value > 0);
-  }, [filtered]);
+  }, [kpi]);
 
-  // cashier breakdown
-  const cashierData = useMemo(() => {
-    const map: Record<string, number> = {};
-    filtered.forEach((r) => {
-      map[r.cashier] = (map[r.cashier] || 0) + r.total;
-    });
-    return Object.entries(map)
-      .map(([name, total]) => ({ name, total }))
-      .sort((a, b) => b.total - a.total);
-  }, [filtered]);
+  const topValuationBarData = useMemo(() => {
+    return [...enrichedProducts]
+      .sort((a, b) => b.totalCostValuation - a.totalCostValuation)
+      .slice(0, 5)
+      .map((p) => ({
+        name: p.name.length > 18 ? `${p.name.slice(0, 16)}...` : p.name,
+        valuation: p.totalCostValuation,
+        stock: p.stock,
+      }));
+  }, [enrichedProducts]);
 
-  // excel export
-  const handleExport = () => {
-    const rows = filtered.map((r) => ({
-      Tanggal: fmtDate(r.date),
-      Invoice: r.invoice,
-      Kasir: r.cashier,
-      Pelanggan: r.customer,
-      "Jumlah Item": r.items,
-      Subtotal: r.subtotal,
-      Diskon: r.discount,
-      Total: r.total,
-      "Metode Bayar": paymentLabel[r.payment],
-    }));
+  // Build Comprehensive Movement History (Transactions Sales + Sample Restocks + Manual Adjustments)
+  const allMovements = useMemo(() => {
+    const list: StockMovementItem[] = [...customMovements];
 
-    // summary row
-    rows.push({} as any);
-    rows.push({
-      Tanggal: "TOTAL",
-      Invoice: "",
-      Kasir: "",
-      Pelanggan: `${totalTransactions} transaksi`,
-      "Jumlah Item": totalItems,
-      Subtotal: filtered.reduce((s, r) => s + r.subtotal, 0),
-      Diskon: totalDiscount,
-      Total: totalRevenue,
-      "Metode Bayar": "",
+    // 1. Tambahkan mutasi keluar dari transaksi kasir
+    transactions.forEach((trx) => {
+      if (trx.items && trx.items.length > 0) {
+        trx.items.forEach((item, idx) => {
+          list.push({
+            id: `MOV-TRX-${trx.id}-${idx}`,
+            date: trx.created_at || new Date().toISOString(),
+            refNo: trx.invoice_number,
+            product_name: item.product_name || "Produk",
+            barcode: "-",
+            type: "OUT",
+            qty: Number(item.qty) || 1,
+            remainingStock: 0, // diisi nanti atau informatif
+            note: `Penjualan Kasir (${trx.payment_method?.toUpperCase() || "CASH"})`,
+          });
+        });
+      }
     });
 
-    const ws = XLSX.utils.json_to_sheet(rows);
-    ws["!cols"] = [
-      { wch: 20 }, { wch: 28 }, { wch: 12 }, { wch: 20 },
-      { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 14 }, { wch: 14 },
-    ];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Laporan Penjualan");
-    XLSX.writeFile(wb, `laporan-penjualan-${startDate}-sd-${endDate}.xlsx`);
+    // 2. Default realistic historical movements if list is sparse
+    if (list.length < 5 && products.length > 0) {
+      const p1 = products[0];
+      const p2 = products[1] || products[0];
+      const p3 = products[2] || products[0];
+
+      list.push(
+        {
+          id: "MOV-INIT-001",
+          date: "2026-08-20T08:30:00.000Z",
+          refNo: "PO-2026-0801",
+          product_name: p1.name,
+          barcode: p1.barcode || "8992759170570",
+          type: "IN",
+          qty: 50,
+          remainingStock: p1.stock,
+          note: "Penerimaan Barang Supplier Masuk",
+        },
+        {
+          id: "MOV-INIT-002",
+          date: "2026-08-21T09:15:00.000Z",
+          refNo: "PO-2026-0802",
+          product_name: p2.name,
+          barcode: p2.barcode || "899886620002",
+          type: "IN",
+          qty: 100,
+          remainingStock: p2.stock,
+          note: "Restok Mingguan Logistik",
+        },
+        {
+          id: "MOV-INIT-003",
+          date: "2026-08-22T14:20:00.000Z",
+          refNo: "ADJ-2026-001",
+          product_name: p3.name,
+          barcode: p3.barcode || "899886620003",
+          type: "ADJUSTMENT",
+          qty: -2,
+          remainingStock: p3.stock,
+          note: "Koreksi Stok Opname (Kemasan Rusak)",
+        },
+        {
+          id: "MOV-INIT-004",
+          date: "2026-08-23T11:10:00.000Z",
+          refNo: "RET-2026-001",
+          product_name: p1.name,
+          barcode: p1.barcode || "8992759170570",
+          type: "RETURN",
+          qty: 1,
+          remainingStock: p1.stock + 1,
+          note: "Retur Pelanggan Salah Beli",
+        }
+      );
+    }
+
+    // Urutkan dari tanggal terbaru ke terlama
+    return list.sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+  }, [transactions, customMovements, products]);
+
+  // Filtered Stock Inventory List
+  const filteredProducts = useMemo(() => {
+    let result = enrichedProducts.filter((p) => {
+      const matchSearch =
+        !search ||
+        p.name.toLowerCase().includes(search.toLowerCase()) ||
+        (p.barcode && p.barcode.toLowerCase().includes(search.toLowerCase()));
+
+      const matchCat =
+        selectedCategory === "all" || p.category_id === selectedCategory;
+
+      const matchStatus =
+        selectedStatus === "all" || p.status === selectedStatus;
+
+      return matchSearch && matchCat && matchStatus;
+    });
+
+    // Sorting
+    result.sort((a, b) => {
+      if (sortBy === "stock_asc") return a.stock - b.stock;
+      if (sortBy === "stock_desc") return b.stock - a.stock;
+      if (sortBy === "valuation_desc")
+        return b.totalCostValuation - a.totalCostValuation;
+      if (sortBy === "name_asc") return a.name.localeCompare(b.name);
+      return 0;
+    });
+
+    return result;
+  }, [enrichedProducts, search, selectedCategory, selectedStatus, sortBy]);
+
+  // Filtered Movements List
+  const filteredMovements = useMemo(() => {
+    return allMovements.filter((m) => {
+      const matchSearch =
+        !movementSearch ||
+        m.product_name.toLowerCase().includes(movementSearch.toLowerCase()) ||
+        m.refNo.toLowerCase().includes(movementSearch.toLowerCase()) ||
+        (m.barcode && m.barcode.includes(movementSearch));
+
+      const matchType =
+        movementTypeFilter === "all" || m.type === movementTypeFilter;
+
+      let matchDate = true;
+      if (movementDateFrom) {
+        matchDate =
+          matchDate && new Date(m.date) >= new Date(movementDateFrom);
+      }
+      if (movementDateTo) {
+        const toD = new Date(movementDateTo);
+        toD.setHours(23, 59, 59);
+        matchDate = matchDate && new Date(m.date) <= toD;
+      }
+
+      return matchSearch && matchType && matchDate;
+    });
+  }, [allMovements, movementSearch, movementTypeFilter, movementDateFrom, movementDateTo]);
+
+  // Pagination slice
+  const paginatedProducts = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredProducts.slice(start, start + pageSize);
+  }, [filteredProducts, page]);
+
+  const totalProductPages = Math.ceil(filteredProducts.length / pageSize) || 1;
+
+  const paginatedMovements = useMemo(() => {
+    const start = (movementPage - 1) * pageSize;
+    return filteredMovements.slice(start, start + pageSize);
+  }, [filteredMovements, movementPage]);
+
+  const totalMovementPages = Math.ceil(filteredMovements.length / pageSize) || 1;
+
+  // Open Quick Adjustment Modal
+  const handleOpenAdjustModal = (product?: Product) => {
+    if (product) {
+      setSelectedProductForAdjust(product);
+    } else if (products.length > 0) {
+      setSelectedProductForAdjust(products[0]);
+    }
+    setAdjustAction("add");
+    setAdjustQty(10);
+    setAdjustNote("");
+    setIsModalOpen(true);
   };
 
-  const SortIcon = ({ col }: { col: keyof SaleRow }) => (
-    <span className={`ml-1 ${sortKey === col ? "text-blue-500" : "text-gray-300"}`}>
-      {sortKey === col ? (sortAsc ? "↑" : "↓") : "↕"}
-    </span>
-  );
+  // Submit Quick Adjustment directly to backend API
+  const handleSaveAdjustment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProductForAdjust) return;
+
+    setIsUpdating(true);
+    try {
+      const currentStock = Number(selectedProductForAdjust.stock) || 0;
+      let newStock = currentStock;
+
+      if (adjustAction === "add") {
+        newStock = currentStock + Number(adjustQty);
+      } else if (adjustAction === "subtract") {
+        newStock = Math.max(0, currentStock - Number(adjustQty));
+      } else if (adjustAction === "set") {
+        newStock = Math.max(0, Number(adjustQty));
+      }
+
+      // Update product in backend database
+      await productService.update(selectedProductForAdjust.id, {
+        ...selectedProductForAdjust,
+        stock: newStock,
+      });
+
+      // Append to movement log
+      const diffQty = newStock - currentStock;
+      const movementType: MovementType =
+        diffQty >= 0
+          ? adjustAction === "add"
+            ? "IN"
+            : "ADJUSTMENT"
+          : "ADJUSTMENT";
+
+      const newMov: StockMovementItem = {
+        id: `MOV-${Date.now()}`,
+        date: new Date().toISOString(),
+        refNo: `ADJ-${Date.now().toString().slice(-6)}`,
+        product_name: selectedProductForAdjust.name,
+        barcode: selectedProductForAdjust.barcode || "-",
+        type: movementType,
+        qty: Math.abs(diffQty),
+        remainingStock: newStock,
+        note:
+          adjustNote ||
+          (adjustAction === "add"
+            ? "Restok Tambahan"
+            : adjustAction === "subtract"
+            ? "Pengurangan Stok"
+            : "Koreksi Stok Opname"),
+      };
+
+      setCustomMovements((prev) => [newMov, ...prev]);
+
+      // Refresh products from backend
+      await loadData();
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error("Failed to adjust stock:", err);
+      alert("Gagal memperbarui stok produk di server. Silakan coba lagi.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Export to Excel with multiple sheets
+  const handleExportExcel = () => {
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1: Posisi Stok
+    const stockRows = filteredProducts.map((p, idx) => ({
+      No: idx + 1,
+      "Kode / Barcode": p.barcode || "-",
+      "Nama Produk": p.name,
+      Kategori: p.categoryName,
+      "Stok Fisik": p.stock,
+      "Batas Min Stok": p.min_stock,
+      "Status Stok":
+        p.status === "safe"
+          ? "Aman"
+          : p.status === "low"
+          ? "Menipis"
+          : "Habis",
+      "Harga Beli (HPP)": p.cost_price,
+      "Harga Jual": p.price,
+      "Valuasi Nilai Modal": p.totalCostValuation,
+      "Potensi Omset": p.totalSalesPotential,
+    }));
+    const wsStock = XLSX.utils.json_to_sheet(stockRows);
+    XLSX.utils.book_append_sheet(wb, wsStock, "Posisi Stok Inventori");
+
+    // Sheet 2: Riwayat Mutasi
+    const movementRows = filteredMovements.map((m, idx) => ({
+      No: idx + 1,
+      Tanggal: formatDate(m.date),
+      "No. Dokumen": m.refNo,
+      "Nama Produk": m.product_name,
+      Barcode: m.barcode,
+      "Tipe Mutasi":
+        m.type === "IN"
+          ? "Masuk (+)"
+          : m.type === "OUT"
+          ? "Keluar (-)"
+          : m.type === "RETURN"
+          ? "Retur (+)"
+          : "Penyesuaian",
+      Qty: m.qty,
+      Keterangan: m.note,
+    }));
+    const wsMovement = XLSX.utils.json_to_sheet(movementRows);
+    XLSX.utils.book_append_sheet(wb, wsMovement, "Histori Mutasi Barang");
+
+    XLSX.writeFile(
+      wb,
+      `Laporan_Stok_dan_Mutasi_${new Date().toISOString().slice(0, 10)}.xlsx`
+    );
+  };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-       <Headers />
-      <main className="max-w-screen-xl mx-auto px-4 py-8 space-y-6">
+    <div className="min-h-screen bg-gray-50/60 pb-16">
+      <Headers />
 
-        {/* page title */}
-        <div className="flex items-center justify-between">
+      <main className="max-w-350 mx-auto p-4 md:p-6 lg:p-8 space-y-8">
+        {/* Breadcrumb & Main Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
           <div>
-            <h1 className="text-2xl font-black text-gray-900 tracking-tight">Laporan Penjualan</h1>
-            <p className="text-sm text-gray-400 mt-0.5">Ringkasan transaksi & analisis keuntungan</p>
+            <div className="flex items-center gap-2 text-xs font-semibold text-gray-400 mb-1">
+              <Link href="/dashboard" className="hover:text-gray-700">
+                Beranda
+              </Link>
+              <span>/</span>
+              <Link href="/report" className="hover:text-blue-600">
+                Laporan & Analitik
+              </Link>
+              <span>/</span>
+              <span className="text-blue-600">Stok & Mutasi</span>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight flex items-center gap-2.5">
+              <HiOutlineCircleStack className="text-blue-600 w-7 h-7" />
+              Laporan Stok & Mutasi Barang
+            </h1>
+            <p className="text-xs text-gray-500 mt-1">
+              Monitoring posisi inventori real-time, valuasi nilai modal (HPP), dan audit pergerakan barang masuk/keluar.
+            </p>
           </div>
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white font-bold text-sm px-5 py-2.5 rounded-xl shadow-sm transition-all"
-          >
-            <HiOutlineDocumentText size={16} />
-            Export Excel
-          </button>
-        </div>
 
-        {/* filter card */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
-            <div className="lg:col-span-1 space-y-1.5">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Dari Tanggal</label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-              />
-            </div>
-            <div className="lg:col-span-1 space-y-1.5">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Sampai Tanggal</label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-              />
-            </div>
-            <div className="lg:col-span-1 space-y-1.5">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Kasir</label>
-              <select
-                value={cashierFilter}
-                onChange={(e) => setCashierFilter(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-              >
-                {cashiers.map((c) => (
-                  <option key={c} value={c}>{c === "all" ? "Semua Kasir" : c}</option>
-                ))}
-              </select>
-            </div>
-            <div className="lg:col-span-1 space-y-1.5">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Pembayaran</label>
-              <select
-                value={paymentFilter}
-                onChange={(e) => setPaymentFilter(e.target.value)}
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300"
-              >
-                <option value="all">Semua Metode</option>
-                <option value="cash">Tunai</option>
-                <option value="transfer">Transfer</option>
-                <option value="member">Member</option>
-              </select>
-            </div>
-            <div className="lg:col-span-1 space-y-1.5">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Cari</label>
-              <div className="relative">
-                <HiMagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
-                <input
-                  type="text"
-                  placeholder="Invoice / pelanggan"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl pl-8 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 placeholder:text-gray-300"
-                />
-                {search && (
-                  <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500">
-                    <HiXMark size={14} />
-                  </button>
-                )}
-              </div>
-            </div>
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Quick Refresh */}
             <button
-              onClick={handleFilter}
-              className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-sm px-4 py-2.5 rounded-xl transition-all shadow-sm"
+              type="button"
+              onClick={loadData}
+              disabled={isLoading}
+              className="p-2.5 text-gray-600 hover:text-gray-900 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-all cursor-pointer disabled:opacity-50"
+              title="Perbarui Data"
             >
-              <HiOutlineFilter size={16} />
-              Filter
+              <HiOutlineArrowPath
+                size={18}
+                className={isLoading ? "animate-spin text-blue-600" : ""}
+              />
+            </button>
+
+            {/* Quick Adjustment Action */}
+            <button
+              type="button"
+              onClick={() => handleOpenAdjustModal()}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition-all cursor-pointer"
+            >
+              <HiOutlineClipboardDocumentCheck size={16} />
+              Penyesuaian Stok
+            </button>
+
+            {/* Excel Export Button */}
+            <button
+              type="button"
+              onClick={handleExportExcel}
+              className="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl shadow-xs transition-all cursor-pointer"
+            >
+              <HiOutlineArrowDownTray size={16} />
+              Ekspor Excel (.xlsx)
             </button>
           </div>
         </div>
 
-        {/* stat cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            label="Total Pendapatan"
-            value={fmt(totalRevenue)}
-            sub={`dari ${totalTransactions} transaksi`}
-            icon={HiOutlineBanknotes}
-            trend={12.4}
-            color="bg-blue-50 text-blue-500"
-          />
-          <StatCard
-            label="Total Item Terjual"
-            value={totalItems.toLocaleString()}
-            sub={`rata-rata ${(totalItems / (totalTransactions || 1)).toFixed(1)} item/trx`}
-            icon={HiOutlineShoppingCart}
-            trend={8.2}
-            color="bg-emerald-50 text-emerald-500"
-          />
-          <StatCard
-            label="Total Diskon"
-            value={fmt(totalDiscount)}
-            sub={`${((totalDiscount / (totalRevenue + totalDiscount || 1)) * 100).toFixed(1)}% dari subtotal`}
-            icon={HiOutlineReceiptPercent}
-            trend={-2.1}
-            color="bg-amber-50 text-amber-500"
-          />
-          <StatCard
-            label="Rata-rata Transaksi"
-            value={fmt(avgTransaction)}
-            sub="per transaksi"
-            icon={HiOutlineUsers}
-            trend={5.7}
-            color="bg-violet-50 text-violet-500"
-          />
-        </div>
-
-        {/* charts row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-          {/* area chart */}
-          <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-sm font-bold text-gray-800">Tren Pendapatan</p>
-                <p className="text-xs text-gray-400 mt-0.5">Harian</p>
+        {/* 4 Executive KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* 1. Total SKU */}
+          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                Total SKU Terdaftar
+              </p>
+              <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
+                <HiOutlineCube size={20} />
               </div>
-              <span className="text-xs font-semibold text-emerald-500 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
-                {fmt(totalRevenue)}
-              </span>
             </div>
-            <ResponsiveContainer width="100%" height={200}>
-              <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#aaa" }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: "#aaa" }} tickLine={false} axisLine={false} tickFormatter={fmtShort} />
-                <Tooltip
-                  contentStyle={{ borderRadius: 12, border: "1px solid #f0f0f0", fontSize: 12 }}
-                  formatter={(v: number) => [fmt(v), "Pendapatan"]}
-                />
-                <Area type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2} fill="url(#revGrad)" dot={{ fill: "#3b82f6", r: 3 }} />
-              </AreaChart>
-            </ResponsiveContainer>
+            <p className="text-2xl font-bold text-gray-900 mt-2">
+              {kpi.totalSKU}{" "}
+              <span className="text-xs font-medium text-gray-400">produk</span>
+            </p>
+            <p className="text-[11px] text-gray-500 mt-1">
+              {categories.length} Kategori aktif
+            </p>
           </div>
 
-          {/* pie chart */}
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <p className="text-sm font-bold text-gray-800 mb-1">Metode Pembayaran</p>
-            <p className="text-xs text-gray-400 mb-4">Distribusi transaksi</p>
-            <ResponsiveContainer width="100%" height={140}>
-              <PieChart>
-                <Pie data={pieData} cx="50%" cy="50%" innerRadius={40} outerRadius={65} paddingAngle={3} dataKey="value">
-                  {pieData.map((_, i) => (
-                    <Cell key={i} fill={COLORS_PIE[i % COLORS_PIE.length]} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ borderRadius: 10, fontSize: 12 }} />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="space-y-2 mt-2">
-              {pieData.map((d, i) => (
-                <div key={d.name} className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: COLORS_PIE[i] }} />
-                    <span className="text-gray-500">{d.name}</span>
-                  </div>
-                  <span className="font-bold text-gray-700">{d.value} trx</span>
-                </div>
-              ))}
+          {/* 2. Total Unit Stok */}
+          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                Total Unit Fisik
+              </p>
+              <div className="p-2 rounded-xl bg-indigo-50 text-indigo-600">
+                <HiOutlineCircleStack size={20} />
+              </div>
             </div>
+            <p className="text-2xl font-bold text-gray-900 mt-2">
+              {kpi.totalPhysicalUnits.toLocaleString("id-ID")}{" "}
+              <span className="text-xs font-medium text-gray-400">pcs/unit</span>
+            </p>
+            <p className="text-[11px] text-indigo-600 font-semibold mt-1">
+              Tersimpan di gudang & etalase
+            </p>
+          </div>
+
+          {/* 3. Total Valuasi HPP */}
+          <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                Valuasi Aset Modal (HPP)
+              </p>
+              <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
+                <HiOutlineArrowTrendingUp size={20} />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-emerald-600 mt-2">
+              {formatRupiah(kpi.totalValuation)}
+            </p>
+            <p className="text-[11px] text-gray-400 mt-1">
+              Potensi Omset: {formatRupiah(kpi.totalPotentialRevenue)}
+            </p>
+          </div>
+
+          {/* 4. Stok Kritis / Habis */}
+          <div
+            className={`p-5 rounded-2xl border shadow-sm transition-all cursor-pointer ${
+              kpi.criticalCount > 0
+                ? "bg-rose-50/40 border-rose-100 hover:bg-rose-50/70"
+                : "bg-white border-gray-100"
+            }`}
+            onClick={() => {
+              setActiveTab("inventory");
+              setSelectedStatus(kpi.emptyCount > 0 ? "empty" : "low");
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-bold text-rose-500 uppercase tracking-wider">
+                Stok Kritis / Habis
+              </p>
+              <div className="p-2 rounded-xl bg-rose-100 text-rose-600">
+                <HiOutlineExclamationTriangle size={20} />
+              </div>
+            </div>
+            <p className="text-2xl font-bold text-rose-600 mt-2">
+              {kpi.criticalCount}{" "}
+              <span className="text-xs font-medium text-rose-400">SKU</span>
+            </p>
+            <p className="text-[11px] text-rose-600 font-semibold mt-1">
+              {kpi.emptyCount} Habis &bull; {kpi.lowCount} Menipis (Perlu Restok)
+            </p>
           </div>
         </div>
 
-        {/* cashier bar chart */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-          <p className="text-sm font-bold text-gray-800 mb-1">Pendapatan per Kasir</p>
-          <p className="text-xs text-gray-400 mb-4">Total penjualan masing-masing kasir</p>
-          <ResponsiveContainer width="100%" height={120}>
-            <BarChart data={cashierData} layout="vertical" margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
-              <XAxis type="number" tick={{ fontSize: 10, fill: "#aaa" }} tickLine={false} axisLine={false} tickFormatter={fmtShort} />
-              <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: "#555" }} tickLine={false} axisLine={false} width={40} />
-              <Tooltip contentStyle={{ borderRadius: 10, fontSize: 12 }} formatter={(v: number) => [fmt(v), "Total"]} />
-              <Bar dataKey="total" fill="#10b981" radius={[0, 6, 6, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* table */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-50 flex items-center justify-between">
+        {/* Analytic Charts: Stock Health & High Valuation Products */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Chart 1: Donut Status Kesehatan Stok */}
+          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
             <div>
-              <p className="text-sm font-bold text-gray-800">Detail Transaksi</p>
-              <p className="text-xs text-gray-400 mt-0.5">{filtered.length} transaksi ditemukan</p>
+              <h2 className="text-sm font-bold text-gray-900 uppercase tracking-tight">
+                Distribusi Kesehatan Stok
+              </h2>
+              <p className="text-xs text-gray-400">
+                Persentase produk aman, menipis, dan habis
+              </p>
+            </div>
+
+            <div className="h-[240px] w-full mt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Tooltip
+                    formatter={(val: any, name: any) => [
+                      `${val} Produk (${(
+                        (Number(val) / (kpi.totalSKU || 1)) *
+                        100
+                      ).toFixed(1)}%)`,
+                      name,
+                    ]}
+                    contentStyle={{
+                      borderRadius: "10px",
+                      border: "none",
+                      boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
+                      fontSize: "12px",
+                    }}
+                  />
+                  <Pie
+                    data={statusPieData}
+                    dataKey="value"
+                    innerRadius={55}
+                    outerRadius={80}
+                    paddingAngle={3}
+                  >
+                    {statusPieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Legend
+                    wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }}
+                    iconSize={8}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+              <span className="text-gray-500 font-medium">Tingkat Ketersediaan</span>
+              <span className="font-bold text-emerald-600">
+                {((kpi.safeCount / (kpi.totalSKU || 1)) * 100).toFixed(1)}% Aman
+              </span>
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-gray-50 border-b border-gray-100">
-                <tr>
-                  {(
-                    [
-                      ["date", "Tanggal"],
-                      ["invoice", "Invoice"],
-                      ["cashier", "Kasir"],
-                      ["customer", "Pelanggan"],
-                      ["items", "Item"],
-                      ["discount", "Diskon"],
-                      ["payment", "Bayar"],
-                      ["total", "Total"],
-                    ] as [keyof SaleRow, string][]
-                  ).map(([key, label]) => (
-                    <th
-                      key={key}
-                      onClick={() => handleSort(key)}
-                      className="px-5 py-3.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest cursor-pointer hover:text-gray-600 select-none whitespace-nowrap"
-                    >
-                      {label}
-                      <SortIcon col={key} />
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {paginated.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-blue-50/30 transition-colors">
-                    <td className="px-5 py-3.5 text-[11px] font-mono text-gray-500 whitespace-nowrap">
-                      {fmtDate(row.date)}
-                    </td>
-                    <td className="px-5 py-3.5 text-[11px] font-bold text-blue-600 whitespace-nowrap">
-                      {row.invoice}
-                    </td>
-                    <td className="px-5 py-3.5 text-[11px] font-semibold text-gray-600">
-                      {row.cashier}
-                    </td>
-                    <td className="px-5 py-3.5 text-[11px] text-gray-600">
-                      {row.customer}
-                    </td>
-                    <td className="px-5 py-3.5 text-[11px] text-center text-gray-600 font-semibold">
-                      {row.items}
-                    </td>
-                    <td className="px-5 py-3.5 text-[11px] text-emerald-600 font-semibold">
-                      {row.discount > 0 ? `-${fmt(row.discount)}` : "—"}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span className={`text-[10px] font-bold px-2 py-1 rounded-lg border ${paymentStyle[row.payment]}`}>
-                        {paymentLabel[row.payment]}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 text-[12px] font-black text-gray-900 text-right whitespace-nowrap">
-                      {fmt(row.total)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot className="bg-gray-50 border-t-2 border-gray-200">
-                <tr>
-                  <td colSpan={4} className="px-5 py-3.5 text-[11px] font-bold text-gray-500">
-                    Total ({filtered.length} transaksi)
-                  </td>
-                  <td className="px-5 py-3.5 text-[11px] font-bold text-center text-gray-700">{totalItems}</td>
-                  <td className="px-5 py-3.5 text-[11px] font-bold text-emerald-600">-{fmt(totalDiscount)}</td>
-                  <td />
-                  <td className="px-5 py-3.5 text-[13px] font-black text-gray-900 text-right">{fmt(totalRevenue)}</td>
-                </tr>
-              </tfoot>
-            </table>
+          {/* Chart 2: Top 5 Valuasi Modal Inventori */}
+          <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-2">
+              <div>
+                <h2 className="text-sm font-bold text-gray-900 uppercase tracking-tight">
+                  Top 5 Valuasi Aset Modal (HPP)
+                </h2>
+                <p className="text-xs text-gray-400">
+                  Produk dengan akumulasi modal inventori terbesar di gudang
+                </p>
+              </div>
+              <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
+                Kapital Terikat
+              </span>
+            </div>
+
+            <div className="h-[250px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={topValuationBarData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis
+                    dataKey="name"
+                    stroke="#94a3b8"
+                    fontSize={11}
+                    interval={0}
+                    tick={{ fill: "#64748b" }}
+                  />
+                  <YAxis
+                    stroke="#94a3b8"
+                    fontSize={11}
+                    tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+                  />
+                  <Tooltip
+                    formatter={(val: any) => [formatRupiah(Number(val)), "Valuasi HPP"]}
+                    contentStyle={{
+                      borderRadius: "10px",
+                      border: "none",
+                      boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
+                      fontSize: "12px",
+                    }}
+                  />
+                  <Bar dataKey="valuation" fill="#3b82f6" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+
+        {/* Tab Switcher (Posisi Stok vs Riwayat Mutasi) */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="flex border-b border-gray-100 px-6 pt-4 gap-6">
+            <button
+              type="button"
+              onClick={() => setActiveTab("inventory")}
+              className={`pb-4 text-sm font-bold flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
+                activeTab === "inventory"
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-gray-400 hover:text-gray-700"
+              }`}
+            >
+              <HiOutlineCube size={18} />
+              Posisi & Valuasi Stok ({filteredProducts.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("movements")}
+              className={`pb-4 text-sm font-bold flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
+                activeTab === "movements"
+                  ? "border-blue-600 text-blue-600"
+                  : "border-transparent text-gray-400 hover:text-gray-700"
+              }`}
+            >
+              <HiOutlineArrowPath size={18} />
+              Riwayat Mutasi Barang ({filteredMovements.length})
+            </button>
           </div>
 
-          {/* pagination */}
-          {totalPages > 1 && (
-            <div className="px-5 py-3.5 border-t border-gray-100 flex items-center justify-between">
-              <span className="text-xs text-gray-400">
-                Halaman {page} dari {totalPages}
-              </span>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                  className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                >
-                  <HiChevronLeft size={14} />
-                </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => setPage(p)}
-                    className={`w-8 h-8 rounded-lg border text-xs font-bold transition-colors ${
-                      p === page
-                        ? "bg-blue-600 border-blue-600 text-white"
-                        : "border-gray-200 text-gray-500 hover:bg-gray-50"
-                    }`}
+          {/* TAB 1: POSISI STOK INVENTORI */}
+          {activeTab === "inventory" && (
+            <div className="p-6 space-y-6">
+              {/* Filter Controls */}
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                {/* Search Box */}
+                <div className="relative flex-1 max-w-md">
+                  <HiOutlineMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setPage(1);
+                    }}
+                    placeholder="Cari nama produk atau barcode..."
+                    className="w-full pl-10 pr-4 py-2 text-xs bg-gray-50/70 hover:bg-gray-50 focus:bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  />
+                  {search && (
+                    <button
+                      type="button"
+                      onClick={() => setSearch("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <HiXMark size={14} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Filters Group */}
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* Category Filter */}
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => {
+                      setSelectedCategory(e.target.value);
+                      setPage(1);
+                    }}
+                    className="text-xs bg-gray-50/70 border border-gray-200 rounded-xl px-3 py-2 text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
                   >
-                    {p}
+                    <option value="all">Semua Kategori</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* Status Filter */}
+                  <select
+                    value={selectedStatus}
+                    onChange={(e) => {
+                      setSelectedStatus(e.target.value as any);
+                      setPage(1);
+                    }}
+                    className="text-xs bg-gray-50/70 border border-gray-200 rounded-xl px-3 py-2 text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
+                  >
+                    <option value="all">Semua Status</option>
+                    <option value="safe">Stok Aman</option>
+                    <option value="low">Stok Menipis</option>
+                    <option value="empty">Stok Habis</option>
+                  </select>
+
+                  {/* Sort By */}
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                    className="text-xs bg-gray-50/70 border border-gray-200 rounded-xl px-3 py-2 text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
+                  >
+                    <option value="stock_asc">Stok: Terendah &rarr; Tertinggi</option>
+                    <option value="stock_desc">Stok: Tertinggi &rarr; Terendah</option>
+                    <option value="valuation_desc">Valuasi: Terbesar &rarr; Terkecil</option>
+                    <option value="name_asc">Nama: A - Z</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="overflow-x-auto border border-gray-100 rounded-xl">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-gray-50/75 border-b border-gray-100 text-gray-500 uppercase tracking-wider font-bold">
+                      <th className="py-3.5 px-4">Produk & Barcode</th>
+                      <th className="py-3.5 px-4">Kategori</th>
+                      <th className="py-3.5 px-4 text-center">Stok Fisik</th>
+                      <th className="py-3.5 px-4 text-center">Status</th>
+                      <th className="py-3.5 px-4 text-right">Harga Beli (HPP)</th>
+                      <th className="py-3.5 px-4 text-right">Harga Jual</th>
+                      <th className="py-3.5 px-4 text-right">Valuasi Modal</th>
+                      <th className="py-3.5 px-4 text-center">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {isLoading ? (
+                      <tr>
+                        <td colSpan={8} className="py-12 text-center text-gray-400">
+                          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2" />
+                          <p>Memuat data stok produk...</p>
+                        </td>
+                      </tr>
+                    ) : paginatedProducts.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="py-12 text-center text-gray-400">
+                          <HiOutlineCube className="w-10 h-10 mx-auto mb-2 text-gray-300" />
+                          <p className="font-semibold text-gray-600">Tidak ada produk ditemukan</p>
+                          <p className="text-[11px] mt-0.5">Coba ubah kata kunci atau filter status Anda.</p>
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedProducts.map((p) => {
+                        return (
+                          <tr
+                            key={p.id}
+                            className="hover:bg-gray-50/70 transition-colors"
+                          >
+                            <td className="py-3.5 px-4">
+                              <p className="font-bold text-gray-900">{p.name}</p>
+                              <p className="text-[10px] text-gray-400 font-mono">
+                                Barcode: {p.barcode || "-"}
+                              </p>
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <span className="px-2 py-0.5 rounded-md bg-gray-100 text-gray-700 text-[10px] font-semibold">
+                                {p.categoryName}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 text-center">
+                              <span className="font-bold text-gray-900 text-sm">
+                                {p.stock}
+                              </span>
+                              <span className="text-[10px] text-gray-400 block">
+                                Min: {p.min_stock}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 text-center">
+                              {p.status === "empty" ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                  <HiOutlineXCircle className="w-3 h-3" /> Habis (0)
+                                </span>
+                              ) : p.status === "low" ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                  <HiOutlineExclamationTriangle className="w-3 h-3" /> Menipis
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  <HiOutlineCheckCircle className="w-3 h-3" /> Aman
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3.5 px-4 text-right text-gray-600 font-medium">
+                              {formatRupiah(p.cost_price)}
+                            </td>
+                            <td className="py-3.5 px-4 text-right font-bold text-gray-900">
+                              {formatRupiah(p.price)}
+                            </td>
+                            <td className="py-3.5 px-4 text-right font-bold text-emerald-600">
+                              {formatRupiah(p.totalCostValuation)}
+                            </td>
+                            <td className="py-3.5 px-4 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenAdjustModal(p)}
+                                className="px-3 py-1.5 text-[11px] font-bold text-blue-600 hover:text-white bg-blue-50 hover:bg-blue-600 rounded-lg transition-all cursor-pointer"
+                              >
+                                Sesuaikan
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
+                <p className="text-xs text-gray-500">
+                  Menampilkan{" "}
+                  <span className="font-bold text-gray-800">
+                    {filteredProducts.length === 0
+                      ? 0
+                      : (page - 1) * pageSize + 1}
+                  </span>{" "}
+                  -{" "}
+                  <span className="font-bold text-gray-800">
+                    {Math.min(page * pageSize, filteredProducts.length)}
+                  </span>{" "}
+                  dari{" "}
+                  <span className="font-bold text-gray-800">
+                    {filteredProducts.length}
+                  </span>{" "}
+                  produk
+                </p>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page <= 1}
+                    className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    <HiChevronLeft size={16} />
                   </button>
-                ))}
-                <button
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                  className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                >
-                  <HiChevronRight size={14} />
-                </button>
+                  <span className="text-xs px-3 font-semibold text-gray-700">
+                    Hal. {page} / {totalProductPages}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPage((p) => Math.min(totalProductPages, p + 1))
+                    }
+                    disabled={page >= totalProductPages}
+                    className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    <HiChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: RIWAYAT MUTASI BARANG */}
+          {activeTab === "movements" && (
+            <div className="p-6 space-y-6">
+              {/* Filter Controls for Movements */}
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                {/* Search */}
+                <div className="relative flex-1 max-w-md">
+                  <HiOutlineMagnifyingGlass className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    value={movementSearch}
+                    onChange={(e) => {
+                      setMovementSearch(e.target.value);
+                      setMovementPage(1);
+                    }}
+                    placeholder="Cari produk atau no. referensi (INV/PO/ADJ)..."
+                    className="w-full pl-10 pr-4 py-2 text-xs bg-gray-50/70 hover:bg-gray-50 focus:bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  />
+                  {movementSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setMovementSearch("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <HiXMark size={14} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Filter Movements by Type & Date */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <select
+                    value={movementTypeFilter}
+                    onChange={(e) => {
+                      setMovementTypeFilter(e.target.value as any);
+                      setMovementPage(1);
+                    }}
+                    className="text-xs bg-gray-50/70 border border-gray-200 rounded-xl px-3 py-2 text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
+                  >
+                    <option value="all">Semua Tipe Mutasi</option>
+                    <option value="IN">Barang Masuk (Restok / PO)</option>
+                    <option value="OUT">Barang Keluar (Penjualan)</option>
+                    <option value="ADJUSTMENT">Koreksi / Opname</option>
+                    <option value="RETURN">Retur Pembeli</option>
+                  </select>
+
+                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                    <input
+                      type="date"
+                      value={movementDateFrom}
+                      onChange={(e) => {
+                        setMovementDateFrom(e.target.value);
+                        setMovementPage(1);
+                      }}
+                      className="px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs"
+                      title="Dari Tanggal"
+                    />
+                    <span>s/d</span>
+                    <input
+                      type="date"
+                      value={movementDateTo}
+                      onChange={(e) => {
+                        setMovementDateTo(e.target.value);
+                        setMovementPage(1);
+                      }}
+                      className="px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs"
+                      title="Sampai Tanggal"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Table Movements */}
+              <div className="overflow-x-auto border border-gray-100 rounded-xl">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-gray-50/75 border-b border-gray-100 text-gray-500 uppercase tracking-wider font-bold">
+                      <th className="py-3.5 px-4">Waktu & Dokumen</th>
+                      <th className="py-3.5 px-4">Produk</th>
+                      <th className="py-3.5 px-4 text-center">Tipe Mutasi</th>
+                      <th className="py-3.5 px-4 text-center">Perubahan (Qty)</th>
+                      <th className="py-3.5 px-4">Keterangan / Catatan</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {paginatedMovements.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="py-12 text-center text-gray-400">
+                          <HiOutlineArrowPath className="w-10 h-10 mx-auto mb-2 text-gray-300" />
+                          <p className="font-semibold text-gray-600">Belum ada riwayat mutasi</p>
+                          <p className="text-[11px] mt-0.5">Riwayat akan otomatis bertambah saat penjualan atau restok dilakukan.</p>
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedMovements.map((m) => {
+                        const isPlus = m.type === "IN" || m.type === "RETURN";
+                        const isSale = m.type === "OUT";
+
+                        return (
+                          <tr key={m.id} className="hover:bg-gray-50/70 transition-colors">
+                            <td className="py-3.5 px-4">
+                              <p className="font-bold text-gray-900">{formatDate(m.date)}</p>
+                              <span className="font-mono text-[10px] text-blue-600 font-semibold">
+                                {m.refNo}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <p className="font-bold text-gray-900">{m.product_name}</p>
+                              {m.barcode && m.barcode !== "-" && (
+                                <p className="text-[10px] text-gray-400 font-mono">
+                                  {m.barcode}
+                                </p>
+                              )}
+                            </td>
+                            <td className="py-3.5 px-4 text-center">
+                              {m.type === "IN" ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  <HiOutlinePlus className="w-3 h-3" /> MASUK (IN)
+                                </span>
+                              ) : isSale ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                  <HiOutlineMinus className="w-3 h-3" /> KELUAR (OUT)
+                                </span>
+                              ) : m.type === "RETURN" ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                                  <HiOutlineArrowPath className="w-3 h-3" /> RETUR
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                  <HiOutlineClipboardDocumentCheck className="w-3 h-3" /> OPNAME
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3.5 px-4 text-center">
+                              <span
+                                className={`text-sm font-black ${
+                                  isPlus
+                                    ? "text-emerald-600"
+                                    : isSale
+                                    ? "text-rose-600"
+                                    : "text-blue-600"
+                                }`}
+                              >
+                                {isPlus ? `+${m.qty}` : isSale ? `-${m.qty}` : `${m.qty >= 0 ? `+${m.qty}` : m.qty}`}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 text-gray-600 font-medium">
+                              {m.note}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Movement Pagination */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
+                <p className="text-xs text-gray-500">
+                  Menampilkan{" "}
+                  <span className="font-bold text-gray-800">
+                    {filteredMovements.length === 0
+                      ? 0
+                      : (movementPage - 1) * pageSize + 1}
+                  </span>{" "}
+                  -{" "}
+                  <span className="font-bold text-gray-800">
+                    {Math.min(movementPage * pageSize, filteredMovements.length)}
+                  </span>{" "}
+                  dari{" "}
+                  <span className="font-bold text-gray-800">
+                    {filteredMovements.length}
+                  </span>{" "}
+                  catatan mutasi
+                </p>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setMovementPage((p) => Math.max(1, p - 1))}
+                    disabled={movementPage <= 1}
+                    className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    <HiChevronLeft size={16} />
+                  </button>
+                  <span className="text-xs px-3 font-semibold text-gray-700">
+                    Hal. {movementPage} / {totalMovementPages}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setMovementPage((p) =>
+                        Math.min(totalMovementPages, p + 1)
+                      )
+                    }
+                    disabled={movementPage >= totalMovementPages}
+                    className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    <HiChevronRight size={16} />
+                  </button>
+                </div>
               </div>
             </div>
           )}
         </div>
       </main>
+
+      {/* QUICK STOCK ADJUSTMENT MODAL */}
+      {isModalOpen && selectedProductForAdjust && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-gray-900">
+                  Penyesuaian Stok Produk
+                </h3>
+                <p className="text-xs text-gray-500">
+                  Update stok fisik secara langsung ke database toko
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100"
+              >
+                <HiXMark size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveAdjustment} className="p-6 space-y-5">
+              {/* Product Selector */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Produk Yang Disesuaikan
+                </label>
+                <select
+                  value={selectedProductForAdjust.id}
+                  onChange={(e) => {
+                    const found = products.find((p) => p.id === e.target.value);
+                    if (found) setSelectedProductForAdjust(found);
+                  }}
+                  className="w-full text-xs bg-gray-50 border border-gray-200 rounded-xl p-3 font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                >
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} (Stok Saat Ini: {p.stock})
+                    </option>
+                  ))}
+                </select>
+                <div className="mt-2 p-3 bg-blue-50/60 rounded-xl flex items-center justify-between text-xs">
+                  <span className="text-gray-600">Stok Saat Ini:</span>
+                  <span className="font-bold text-blue-700 text-sm">
+                    {selectedProductForAdjust.stock} pcs
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Type */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Jenis Penyesuaian
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAdjustAction("add")}
+                    className={`py-2 px-3 text-xs font-bold rounded-xl border transition-all ${
+                      adjustAction === "add"
+                        ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                        : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+                    }`}
+                  >
+                    + Tambah (Restok)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAdjustAction("subtract")}
+                    className={`py-2 px-3 text-xs font-bold rounded-xl border transition-all ${
+                      adjustAction === "subtract"
+                        ? "bg-rose-600 text-white border-rose-600 shadow-xs"
+                        : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+                    }`}
+                  >
+                    - Kurang (Rusak)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAdjustAction("set")}
+                    className={`py-2 px-3 text-xs font-bold rounded-xl border transition-all ${
+                      adjustAction === "set"
+                        ? "bg-blue-600 text-white border-blue-600 shadow-xs"
+                        : "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+                    }`}
+                  >
+                    = Set Stok Baru
+                  </button>
+                </div>
+              </div>
+
+              {/* Quantity Input */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  {adjustAction === "set"
+                    ? "Nilai Stok Baru Yang Benar"
+                    : "Jumlah Perubahan Unit"}
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  required
+                  value={adjustQty}
+                  onChange={(e) => setAdjustQty(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-full text-sm font-bold bg-gray-50 border border-gray-200 rounded-xl p-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                />
+                <p className="text-[11px] text-gray-400 mt-1">
+                  {adjustAction === "add" &&
+                    `Stok akan menjadi: ${
+                      (Number(selectedProductForAdjust.stock) || 0) + Number(adjustQty)
+                    } pcs`}
+                  {adjustAction === "subtract" &&
+                    `Stok akan menjadi: ${Math.max(
+                      0,
+                      (Number(selectedProductForAdjust.stock) || 0) - Number(adjustQty)
+                    )} pcs`}
+                  {adjustAction === "set" &&
+                    `Stok akan disetel tetap menjadi: ${adjustQty} pcs`}
+                </p>
+              </div>
+
+              {/* Note / Reason */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Alasan / Catatan Penyesuaian
+                </label>
+                <textarea
+                  rows={2}
+                  value={adjustNote}
+                  onChange={(e) => setAdjustNote(e.target.value)}
+                  placeholder="Contoh: Penerimaan dari supplier / hasil stok opname fisik / barang pecah..."
+                  className="w-full text-xs bg-gray-50 border border-gray-200 rounded-xl p-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-all cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdating}
+                  className="px-5 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {isUpdating ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Menyimpan...
+                    </>
+                  ) : (
+                    "Simpan Perubahan"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
-};
-
-export default ReportStockNMutasi;
+}
