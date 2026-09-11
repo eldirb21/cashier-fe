@@ -286,3 +286,34 @@ div {
     border-color 0.25s ease,
     color 0.2s ease;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   RECEIPT PRINTING STYLES (THERMAL & DESKTOP PRINTER)
+   ═══════════════════════════════════════════════════════════ */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  .receipt-print-area,
+  .receipt-print-area * {
+    visibility: visible !important;
+  }
+  .receipt-print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 80mm !important;
+    max-width: 80mm !important;
+    margin: 0 auto !important;
+    padding: 10px !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-family: "Courier New", Courier, monospace !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+
